@@ -132,7 +132,8 @@ ivybid 的 Chatwoot 皮肤（nginx 换色）不受影响。如果新界面里有
 
 ## 发布记录
 
-- 2026-10-24：首次发布 `chatwoot-custom:v4.19.0-ce-reply-templates-ed22be2`。发布前的数据库备份在 `/mnt/soluber_data/chatwoot/backups/pre-reply-templates-20261024-205800/`。旧镜像 `chatwoot/chatwoot:v4.19.0-ce` 保留在服务器上，用于回滚。
+- 2026-10-24：首次发布 `chatwoot-custom:v4.19.0-ce-reply-templates-ed22be2`。
+- 2026-10-24：发布 AI 草稿（DeepSeek）`chatwoot-custom:v4.19.0-ce-reply-templates-d443871`，迁移 `20261024000004` 新增 `canned_responses.ai_prompt`。发布前备份在 `/mnt/soluber_data/chatwoot/backups/pre-ai-drafts-*`。发布前的数据库备份在 `/mnt/soluber_data/chatwoot/backups/pre-reply-templates-20261024-205800/`。旧镜像 `chatwoot/chatwoot:v4.19.0-ce` 保留在服务器上，用于回滚。
 
 ## 回滚（出问题时）
 
@@ -158,3 +159,17 @@ docker compose up -d
 ## 以后升级 Chatwoot
 
 这个版本是从 v4.19.0 改出来的。以后要升级到新版 Chatwoot，需要先把新版本合并进这个分支、解决冲突、重新跑测试，再按上面的步骤构建发布。不能直接换回官方的 `chatwoot/chatwoot:latest`，否则新功能会消失。新加的表会留在数据库里，但没有界面用到。
+
+## AI 草稿（DeepSeek）配置
+
+在 `/mnt/soluber_data/chatwoot/.env` 里加：
+
+```bash
+DEEPSEEK_API_KEY=你的key
+```
+
+可选：`REPLY_TEMPLATES_AI_MODEL`（默认 `deepseek-chat`）、`DEEPSEEK_BASE_URL`（默认 `https://api.deepseek.com/`）。改完 `.env` 后重启：
+
+```bash
+cd /mnt/soluber_data/chatwoot && docker compose up -d rails sidekiq
+```
