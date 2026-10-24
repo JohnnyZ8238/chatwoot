@@ -76,5 +76,147 @@
         "NO": "No, keep "
       }
     }
+  },
+  "REPLY_TEMPLATES": {
+    "TABS": {
+      "FAVORITES": "Favorites",
+      "RECENT": "Recent",
+      "MINE": "Mine",
+      "COMPANY": "Company",
+      "ALL": "All"
+    },
+    "SCOPE": {
+      "COMPANY": "Company",
+      "PERSONAL": "Mine"
+    },
+    "ALL_CATEGORIES": "All",
+    "UNCATEGORIZED": "Uncategorized",
+    "PIN": "Pin to Favorites",
+    "UNPIN": "Remove from Favorites",
+    "USED": "used {count}×",
+    "EMPTY": {
+      "FAVORITES": "No favorites yet. Click the star on any template to pin it here.",
+      "RECENT": "Templates you use will show up here.",
+      "SEARCH": "No templates match “{searchTerm}”.",
+      "NONE": "No templates here yet."
+    },
+    "FILL": {
+      "INSERT": "Insert",
+      "PREVIEW": "Preview",
+      "REQUIRED": "Required",
+      "PICK_DATE": "Pick a date",
+      "NONE_OPTION": "(none)",
+      "YES": "Yes",
+      "NO": "No",
+      "DATE_TODAY": "Today",
+      "DATE_TOMORROW": "Tomorrow",
+      "DATE_NEXT_BUSINESS_DAY": "Next business day",
+      "DATE_IN_3_DAYS": "+3 days",
+      "DATE_IN_7_DAYS": "+7 days",
+      "HINT": "Enter inserts the reply"
+    },
+    "LIBRARY": {
+      "TITLE": "Reply templates",
+      "OPEN": "Templates",
+      "OPEN_HINT": "Browse reply templates (Alt+T)",
+      "SEARCH": "Search title, /shortcut or text",
+      "ALL_TEMPLATES": "All templates",
+      "ALL_COMPANY": "All company",
+      "ALL_MINE": "All mine",
+      "SORT": {
+        "DEFAULT_FAVORITES": "My order",
+        "DEFAULT_RECENT": "Last used",
+        "USED": "Most used",
+        "RECENT": "Recently used",
+        "AZ": "A → Z"
+      },
+      "DRAG_HINT": "Drag to reorder your favorites",
+      "COPY_TO_MINE": "Copy to Mine",
+      "EDIT": "Edit in settings",
+      "INSERT": "Insert reply",
+      "PICK": "Pick a template on the left."
+    },
+    "SETTINGS": {
+      "HEADER": "Reply templates",
+      "DESCRIPTION": "Type / in the reply box to use a template, or press Alt+T to browse the whole library. Pin the ones you use most with the star.",
+      "COMPANY_TAB": "Company library",
+      "MINE_TAB": "My library",
+      "COMPANY_NOTE_ADMIN": "Everyone on the team sees the company library. Only administrators can change it.",
+      "COMPANY_NOTE_AGENT": "Shared by your company. Pin these to Favorites, or copy one to My library to make your own version.",
+      "MINE_NOTE": "Only you see your library.",
+      "NEW_TEMPLATE": "New template",
+      "NEW_CATEGORY": "Category",
+      "NEW_CATEGORY_PLACEHOLDER": "New category name",
+      "RENAME": "Rename",
+      "MOVE_UP": "Move up",
+      "DELETE_CATEGORY": "Delete category",
+      "DELETE_CATEGORY_CONFIRM": "Delete “{name}”? Its templates stay, without a category.",
+      "TABLE": {
+        "TEMPLATE": "Template",
+        "SHORTCUT": "Shortcut",
+        "CATEGORY": "Category",
+        "ASKS_FOR": "Asks for",
+        "USED": "Used",
+        "ACTIONS": "Actions"
+      },
+      "DUPLICATE": "Duplicate",
+      "DELETE_CONFIRM": "Delete “{title}”?",
+      "SAVED": "Template saved.",
+      "DELETED": "Template deleted.",
+      "ERROR": "Something went wrong. Please try again."
+    },
+    "EDITOR": {
+      "NEW_TITLE": "New template",
+      "EDIT_TITLE": "Edit template",
+      "TITLE": "Title",
+      "TITLE_PLACEHOLDER": "e.g. Shipping date",
+      "SHORTCUT": "Shortcut",
+      "SHORTCUT_PLACEHOLDER": "ship",
+      "LIBRARY": "Library",
+      "CATEGORY": "Category",
+      "NO_CATEGORY": "No category",
+      "MESSAGE": "Message",
+      "MESSAGE_PLACEHOLDER": "Hi {'{{'}contact.first_name{'}}'}, …",
+      "INSERT_VARIABLE": "Insert variable",
+      "ASK_AGENT": "Ask the agent…",
+      "ASK_AGENT_PLACEHOLDER": "What should the agent fill in? e.g. Refund amount",
+      "ADD": "Add",
+      "FALLBACK_HINT": "Fallback when empty: {example}",
+      "FIELDS": "Fields the agent fills in",
+      "FIELDS_EMPTY": "None yet. Any {'{{'}name{'}}'} that isn't a system variable becomes a field here.",
+      "FIELD": {
+        "VARIABLE": "Variable",
+        "LABEL": "Label",
+        "TYPE": "Type",
+        "OPTIONS": "Options (comma separated)",
+        "DEFAULT": "Default",
+        "REQUIRED": "Required"
+      },
+      "TYPES": {
+        "text": "Short text",
+        "long": "Long text",
+        "number": "Number",
+        "money": "Amount ($)",
+        "date": "Date",
+        "select": "Dropdown",
+        "yesno": "Yes / No"
+      },
+      "GROUPS": {
+        "CONTACT": "Contact",
+        "CONVERSATION": "Conversation",
+        "AGENT": "Agent",
+        "INBOX": "Inbox",
+        "ACCOUNT": "Account",
+        "DATE_TIME": "Date & time"
+      },
+      "PREVIEW": "Preview",
+      "LEGEND": "Green is filled automatically, yellow is asked when the template is used.",
+      "ERRORS": {
+        "TITLE": "Give it a title.",
+        "SHORTCUT": "Add a shortcut.",
+        "MESSAGE": "Write the message."
+      },
+      "SAVE": "Save"
+    }
   }
 }

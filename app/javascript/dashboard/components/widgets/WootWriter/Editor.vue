@@ -17,6 +17,9 @@ import TagAgents from '../conversation/TagAgents.vue';
 import VariableList from '../conversation/VariableList.vue';
 import MacroList from '../conversation/MacroList.vue';
 import TagTools from '../conversation/TagTools.vue';
+import TemplateFillDialog from '../conversation/replyTemplates/TemplateFillDialog.vue';
+import { useStore } from 'dashboard/composables/store';
+import { useReplyTemplateVariables } from 'dashboard/composables/useReplyTemplateVariables';
 import CopilotMenuBar from './CopilotMenuBar.vue';
 
 import { useEmitter } from 'dashboard/composables/emitter';
@@ -286,6 +289,15 @@ const dismissCannedResponses = () => dismissPicker(showCannedMenu);
 const dismissVariables = () => dismissPicker(showVariables);
 const dismissEmojiMenu = () => dismissPicker(showEmojiMenu);
 const dismissMacros = () => dismissPicker(showMacroMenu);
+
+// Reply templates: one without agent fields goes straight in; one with fields asks for them
+// first, and the slash range is kept so the filled reply replaces the trigger.
+const store = useStore();
+const templateVariables = useReplyTemplateVariables(
+  computed(() => props.variables)
+);
+const fillTemplate = ref(null);
+const fillRange = ref(null);
 
 // Deleting the trigger drops the suggestion, so the plugin closes the picker through
 // `onExit` on its own.
@@ -790,6 +802,30 @@ function insertSpecialContent(type, content) {
   useTrack(event_map[type]);
 }
 
+function insertTemplate(content, template) {
+  insertSpecialContent('cannedResponse', content);
+  if (template?.id) store.dispatch('markCannedResponseUsed', template.id);
+}
+
+function onCannedFill(template) {
+  fillRange.value = range.value;
+  fillTemplate.value = template;
+  showCannedMenu.value = false;
+}
+
+function onFillInsert(content) {
+  range.value = fillRange.value;
+  insertTemplate(content, fillTemplate.value);
+  fillTemplate.value = null;
+  editorView?.focus();
+}
+
+function onFillClose() {
+  if (!fillTemplate.value) return;
+  fillTemplate.value = null;
+  editorView?.focus();
+}
+
 function handleLineBreakWhenCmdAndEnterToSendEnabled(event) {
   if (
     hasPressedCommandAndEnter(event) &&
@@ -977,7 +1013,15 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, content => {
       :schema="editorSchema"
       @close="dismissCannedResponses"
       @remove-trigger="removeSuggestionTrigger"
-      @replace="content => insertSpecialContent('cannedResponse', content)"
+      @replace="insertTemplate"
+      @fill="onCannedFill"
+    />
+    <TemplateFillDialog
+      v-if="fillTemplate"
+      :template="fillTemplate"
+      :variables="templateVariables"
+      @insert="onFillInsert"
+      @close="onFillClose"
     />
     <VariableList
       v-if="shouldShowVariables"
