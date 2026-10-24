@@ -155,6 +155,13 @@ RSpec.describe 'Canned Responses API', type: :request do
         expect(canned_response.reload.short_code).to eq('B')
       end
 
+      it 'lets an administrator move a company template into their own library' do
+        put "#{base_url}/#{canned_response.id}", params: { scope: 'personal' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(canned_response.reload.user_id).to eq(admin.id)
+      end
+
       it 'does not let an agent update a company template' do
         put "#{base_url}/#{canned_response.id}", params: { short_code: 'B' }, headers: agent.create_new_auth_token, as: :json
 

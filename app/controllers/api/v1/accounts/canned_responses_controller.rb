@@ -68,8 +68,14 @@ class Api::V1::Accounts::CannedResponsesController < Api::V1::Accounts::BaseCont
     @canned_response = Current.account.canned_responses.visible_to(Current.user).find(params[:id])
   end
 
+  # The policy decides on the record (company vs owner), not the class
+  def check_authorization
+    authorize(@canned_response)
+  end
+
   def canned_response_params
-    params.require(:canned_response).permit(
+    # a scope-only update (moving between libraries) wraps to an empty hash, which `require` rejects
+    params.fetch(:canned_response, ActionController::Parameters.new).permit(
       :short_code, :content, :title, :canned_response_category_id,
       variables: [:key, :label, :type, :required, :default, { options: [] }]
     )

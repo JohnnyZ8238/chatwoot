@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { createStore } from 'vuex';
 import cannedResponse from 'dashboard/store/modules/cannedResponse';
 import cannedResponseCategories from 'dashboard/store/modules/cannedResponseCategories';
@@ -54,8 +54,9 @@ const RECORDS = [
 
 const reorder = vi.fn();
 
-const mountLibrary = () =>
+const mountLibrary = (options = {}) =>
   mount(TemplateLibraryDialog, {
+    ...options,
     props: { variables: { 'contact.first_name': 'Emily' } },
     global: {
       plugins: [
@@ -98,6 +99,31 @@ const rowIds = wrapper =>
 
 describe('TemplateLibraryDialog', () => {
   beforeEach(() => reorder.mockClear());
+
+  it('focuses the search box when it opens', async () => {
+    const wrapper = mountLibrary({ attachTo: document.body });
+    await flushPromises();
+
+    expect(document.activeElement).toBe(
+      wrapper.find('[data-testid="library-search"]').element
+    );
+    wrapper.unmount();
+  });
+
+  it('Enter in the search box moves to the fields of a template that asks for some', async () => {
+    const wrapper = mountLibrary({ attachTo: document.body });
+    await flushPromises();
+
+    await wrapper
+      .find('[data-testid="library-search"]')
+      .trigger('keydown', { key: 'Enter' });
+
+    expect(wrapper.emitted('insert')).toBeUndefined();
+    expect(document.activeElement).toBe(
+      wrapper.find('input[type="date"]').element
+    );
+    wrapper.unmount();
+  });
 
   it('opens on Favorites in the saved order', () => {
     expect(rowIds(mountLibrary())).toEqual([1, 2]);

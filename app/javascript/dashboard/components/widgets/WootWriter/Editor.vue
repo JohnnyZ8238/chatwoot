@@ -20,7 +20,6 @@ import TagTools from '../conversation/TagTools.vue';
 import TemplateFillDialog from '../conversation/replyTemplates/TemplateFillDialog.vue';
 import TemplateLibraryDialog from '../conversation/replyTemplates/TemplateLibraryDialog.vue';
 import { useStore } from 'dashboard/composables/store';
-import { useReplyTemplateVariables } from 'dashboard/composables/useReplyTemplateVariables';
 import CopilotMenuBar from './CopilotMenuBar.vue';
 
 import { useEmitter } from 'dashboard/composables/emitter';
@@ -294,10 +293,9 @@ const dismissMacros = () => dismissPicker(showMacroMenu);
 // Reply templates: one without agent fields goes straight in; one with fields asks for them
 // first, and the slash range is kept so the filled reply replaces the trigger.
 const store = useStore();
-const templateVariables = useReplyTemplateVariables(
-  computed(() => props.variables)
-);
 const fillTemplate = ref(null);
+// the picker's variables from when it opened, so dates and times are current
+const fillVariables = ref({});
 const fillRange = ref(null);
 const showTemplateLibrary = ref(false);
 
@@ -823,7 +821,8 @@ function insertTemplate(content, template) {
   if (template?.id) store.dispatch('markCannedResponseUsed', template.id);
 }
 
-function onCannedFill(template) {
+function onCannedFill(template, variables) {
+  fillVariables.value = variables;
   fillRange.value = range.value;
   fillTemplate.value = template;
   showCannedMenu.value = false;
@@ -1050,7 +1049,7 @@ const onLibraryClose = () => {
     <TemplateFillDialog
       v-if="fillTemplate"
       :template="fillTemplate"
-      :variables="templateVariables"
+      :variables="fillVariables"
       @insert="onFillInsert"
       @close="onFillClose"
     />

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { picoSearch } from '@chatwoot/pico-search';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -25,6 +25,8 @@ const emit = defineEmits(['insert', 'close']);
 const store = useStore();
 const { t } = useI18n();
 const dialogRef = ref(null);
+const searchRef = ref(null);
+const fieldsRef = ref(null);
 
 const templates = useMapGetter('getCannedResponses');
 const favorites = useMapGetter('getFavoriteCannedResponses');
@@ -281,10 +283,28 @@ const onDrop = targetId => {
   store.dispatch('reorderCannedResponseFavorites', ids);
 };
 
-onMounted(() => {
+const focusFirstField = () =>
+  fieldsRef.value?.querySelector('input, select, textarea')?.focus();
+
+// Enter in the search box inserts a template that asks nothing, otherwise moves to its fields
+const onSearchEnter = () => {
+  if (fields.value.length) focusFirstField();
+  else insert();
+};
+
+const onDialogKeydown = event => {
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
+  event.preventDefault();
+  insert();
+};
+
+// Dialog renders its content only once open, so the search box exists after that render
+onMounted(async () => {
   store.dispatch('getCannedResponse');
   store.dispatch('cannedResponseCategories/get');
   dialogRef.value?.open();
+  await nextTick();
+  searchRef.value?.focus();
 });
 </script>
 
@@ -298,7 +318,10 @@ onMounted(() => {
     @close="emit('close')"
     @confirm="insert"
   >
-    <div class="flex h-[32rem] overflow-hidden border rounded-xl border-n-weak">
+    <div
+      class="flex h-[32rem] overflow-hidden border rounded-xl border-n-weak"
+      @keydown="onDialogKeydown"
+    >
       <nav
         class="flex-shrink-0 w-48 py-2 overflow-y-auto border-r border-n-weak"
       >
@@ -332,13 +355,14 @@ onMounted(() => {
       <div class="flex flex-col flex-shrink-0 w-72 border-r border-n-weak">
         <div class="flex gap-2 p-2 border-b border-n-weak">
           <input
+            ref="searchRef"
             v-model="search"
             data-testid="library-search"
             type="text"
             :placeholder="t('REPLY_TEMPLATES.LIBRARY.SEARCH')"
             class="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-lg outline-none reset-base bg-n-alpha-black2 text-n-slate-12"
             @keydown="onSearchKeydown"
-            @keydown.enter.prevent="insert"
+            @keydown.enter.exact.prevent="onSearchEnter"
           />
           <select
             v-model="sort"
@@ -461,7 +485,11 @@ onMounted(() => {
               {{ t('REPLY_TEMPLATES.LIBRARY.EDIT') }}
             </router-link>
           </div>
-          <div v-if="fields.length" class="grid gap-3 mb-4 sm:grid-cols-2">
+          <div
+            v-if="fields.length"
+            ref="fieldsRef"
+            class="grid gap-3 mb-4 sm:grid-cols-2"
+          >
             <TemplateFieldInput
               v-for="field in fields"
               :key="field.key"

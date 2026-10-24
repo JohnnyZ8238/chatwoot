@@ -205,7 +205,8 @@ const onSelect = ({ record }) => {
     templateVariables.value
   );
   if (fields.length) {
-    emit('fill', record);
+    // computed when this picker opened, so dates and times are current
+    emit('fill', record, templateVariables.value);
     return;
   }
   emit(

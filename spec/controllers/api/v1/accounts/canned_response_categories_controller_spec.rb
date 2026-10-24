@@ -53,6 +53,15 @@ RSpec.describe 'Canned Response Categories API', type: :request do
       expect(category.reload.name).to eq('Shipping')
     end
 
+    it 'lets an administrator rename a company category' do
+      category = create(:canned_response_category, account: account, name: 'Shipping')
+
+      patch "#{base_url}/#{category.id}", params: { name: 'Delivery' }, headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(category.reload.name).to eq('Delivery')
+    end
+
     it 'lets an agent rename their own category' do
       category = create(:canned_response_category, account: account, user: agent, name: 'Old')
 

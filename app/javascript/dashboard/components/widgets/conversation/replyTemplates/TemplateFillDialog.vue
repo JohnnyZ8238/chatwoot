@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import TemplateFieldInput from './TemplateFieldInput.vue';
@@ -19,6 +19,7 @@ const emit = defineEmits(['insert', 'close']);
 
 const { t } = useI18n();
 const dialogRef = ref(null);
+const fieldsRef = ref(null);
 
 const fields = computed(() =>
   getTemplateFields(
@@ -47,7 +48,19 @@ const onConfirm = () => {
   dialogRef.value?.close();
 };
 
-onMounted(() => dialogRef.value?.open());
+const onKeydown = event => {
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
+  event.preventDefault();
+  onConfirm();
+};
+
+// Dialog renders its content only once open, so focus the first field after that render;
+// otherwise focus lands on Cancel and Enter would throw the template away
+onMounted(async () => {
+  dialogRef.value?.open();
+  await nextTick();
+  fieldsRef.value?.querySelector('input, select, textarea')?.focus();
+});
 </script>
 
 <template>
@@ -61,8 +74,8 @@ onMounted(() => dialogRef.value?.open());
     @confirm="onConfirm"
     @close="emit('close')"
   >
-    <div class="flex flex-col gap-4">
-      <div class="grid gap-3 sm:grid-cols-2">
+    <div class="flex flex-col gap-4" @keydown="onKeydown">
+      <div ref="fieldsRef" class="grid gap-3 sm:grid-cols-2">
         <TemplateFieldInput
           v-for="field in fields"
           :key="field.key"

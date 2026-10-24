@@ -47,4 +47,9 @@ class Api::V1::Accounts::CannedResponseCategoriesController < Api::V1::Accounts:
   def fetch_category
     @category = categories.find(params[:id])
   end
+
+  # The policy decides on the record (company vs owner), not the class
+  def check_authorization
+    authorize(@category)
+  end
 end

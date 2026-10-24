@@ -129,6 +129,18 @@ describe('CannedResponse picker', () => {
     expect(wrapper.emitted('replace')).toBeUndefined();
   });
 
+  it('hands the fill dialog variables computed when the picker opened', async () => {
+    const wrapper = mountPicker();
+
+    await wrapper.find('[data-id="1"]').trigger('click');
+
+    expect(wrapper.emitted('fill')[0][1]).toMatchObject({
+      'account.name': 'ivybid',
+      'contact.first_name': '',
+      'time.now': expect.stringMatching(/^\d\d:\d\d$/),
+    });
+  });
+
   it('emits replace with resolved content for a template without fields', async () => {
     const wrapper = mountPicker();
 

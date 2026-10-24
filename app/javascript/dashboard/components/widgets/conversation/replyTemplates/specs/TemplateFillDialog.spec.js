@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import TemplateFillDialog from '../TemplateFillDialog.vue';
 
 const DialogStub = {
@@ -39,6 +39,34 @@ describe('TemplateFillDialog', () => {
   });
 
   afterEach(() => vi.useRealTimers());
+
+  it('focuses the first field when it opens', async () => {
+    const wrapper = mount(TemplateFillDialog, {
+      props: { template: TEMPLATE, variables: {} },
+      global: { stubs: { Dialog: DialogStub } },
+      attachTo: document.body,
+    });
+    await flushPromises();
+
+    expect(document.activeElement).toBe(
+      wrapper.find('input[type="date"]').element
+    );
+    wrapper.unmount();
+  });
+
+  it('inserts with Ctrl+Enter once required fields are filled', async () => {
+    const wrapper = mountDialog();
+    const input = wrapper.find('input[type="date"]');
+
+    await input.trigger('keydown', { key: 'Enter', ctrlKey: true });
+    expect(wrapper.emitted('insert')).toBeUndefined();
+
+    await input.setValue('2026-10-26');
+    await input.trigger('keydown', { key: 'Enter', ctrlKey: true });
+    expect(wrapper.emitted('insert')[0][0]).toBe(
+      'Hi Emily, order ships Mon, Oct 26 by UPS.'
+    );
+  });
 
   it('disables Insert until required fields are filled', async () => {
     const wrapper = mountDialog();
