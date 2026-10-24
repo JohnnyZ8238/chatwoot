@@ -55,16 +55,23 @@ free -h
 
 下载代码并构建：
 
+服务器跑的是社区版（`v4.19.0-ce`），所以构建时和官方 CE 镜像一样：去掉 enterprise 代码，并标记 `CW_EDITION=ce`。构建目录放在 50GB 盘上。
+
 ```bash
-cd /mnt/soluber_data
-rm -rf chatwoot-src
-git clone --depth 1 -b feature/reply-templates https://github.com/JohnnyZ8238/chatwoot.git chatwoot-src
-cd chatwoot-src
-TAG=chatwoot-custom:reply-templates-$(git rev-parse --short HEAD)
+D=/mnt/soluber_data/build/chatwoot-reply-templates
+rm -rf $D
+git clone --depth 1 -b feature/reply-templates https://github.com/JohnnyZ8238/chatwoot.git $D
+cd $D
+SHA=$(git rev-parse HEAD)
+TAG=chatwoot-custom:v4.19.0-ce-reply-templates-$(git rev-parse --short HEAD)
+rm -rf enterprise spec/enterprise
+printf '\nENV CW_EDITION="ce"\n' >> docker/Dockerfile
 echo $TAG
 docker build -f docker/Dockerfile -t $TAG .
 docker images | grep chatwoot-custom
 ```
+
+不要删 `.git` 目录：Dockerfile 里有一步 `git rev-parse HEAD` 要读它。
 
 最后一行能看到新镜像就说明构建成功。把 `echo $TAG` 打印出来的名字记下来，例如 `chatwoot-custom:reply-templates-ab12cd3`。
 
@@ -78,9 +85,9 @@ swapoff /swapfile-build && rm -f /swapfile-build
 
 ```bash
 cd /mnt/soluber_data/chatwoot
-grep -n "image: chatwoot/chatwoot" docker-compose*.y*ml
-sed -i "s#image: chatwoot/chatwoot:.*#image: $TAG#" docker-compose*.y*ml
-grep -n "image:" docker-compose*.y*ml
+grep -n "image: chat" docker-compose.yml
+sed -i "s#image: chatwoot[-/a-z]*:[^ ]*#image: $TAG#" docker-compose.yml
+grep -n "image:" docker-compose.yml
 ```
 
 `TAG` 变量来自第 3 步。如果你换了终端窗口，先重新设一次：`TAG=chatwoot-custom:reply-templates-xxxxxxx`。
@@ -121,13 +128,19 @@ ivybid 的 Chatwoot 皮肤（nginx 换色）不受影响。如果新界面里有
 
 ---
 
+刚重启的头几秒，`/api` 可能返回 `"data_services":"failing"`，过 5 秒再查一次会变成 `ok`。
+
+## 发布记录
+
+- 2026-10-24：首次发布 `chatwoot-custom:v4.19.0-ce-reply-templates-ed22be2`。发布前的数据库备份在 `/mnt/soluber_data/chatwoot/backups/pre-reply-templates-20261024-205800/`。旧镜像 `chatwoot/chatwoot:v4.19.0-ce` 保留在服务器上，用于回滚。
+
 ## 回滚（出问题时）
 
 新加的表和列旧版 Chatwoot 不会用到，所以回滚只需把镜像换回去，不用恢复数据库：
 
 ```bash
 cd /mnt/soluber_data/chatwoot
-cp /mnt/soluber_data/backups/docker-compose*.y*ml .
+cp /mnt/soluber_data/chatwoot/backups/pre-reply-templates-20261024-205800/docker-compose.yml .
 docker compose up -d
 docker compose ps
 ```
