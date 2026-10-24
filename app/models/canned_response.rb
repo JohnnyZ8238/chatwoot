@@ -104,11 +104,12 @@ class CannedResponse < ApplicationRecord
     return errors.add(:variables, 'must be a list of fields') unless variables.is_a?(Array)
 
     keys = variables.map { |field| field.is_a?(Hash) ? field['key'] : nil }
-    valid = variables.all? do |field|
-      field.is_a?(Hash) && VARIABLE_KEY_FORMAT.match?(field['key'].to_s) && VARIABLE_TYPES.include?(field['type'])
-    end
-    errors.add(:variables, 'has an invalid field') unless valid
+    errors.add(:variables, 'has an invalid field') unless variables.all? { |field| valid_variable?(field) }
     errors.add(:variables, 'has a duplicate field') if keys.uniq.size != keys.size
+  end
+
+  def valid_variable?(field)
+    field.is_a?(Hash) && VARIABLE_KEY_FORMAT.match?(field['key'].to_s) && VARIABLE_TYPES.include?(field['type'])
   end
 
   def category_in_same_library

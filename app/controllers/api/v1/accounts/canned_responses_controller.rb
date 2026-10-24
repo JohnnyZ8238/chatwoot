@@ -33,7 +33,7 @@ class Api::V1::Accounts::CannedResponsesController < Api::V1::Accounts::BaseCont
 
   # Usage is the caller's own record; it does not touch the template, so other dashboards are not told to refetch
   def use
-    @canned_response.increment!(:usage_count)
+    @canned_response.increment!(:usage_count) # rubocop:disable Rails/SkipsModelValidations
     record = preference || build_preference
     record.update!(use_count: record.use_count + 1, last_used_at: Time.current)
     render json: @canned_response.as_template_json(record)

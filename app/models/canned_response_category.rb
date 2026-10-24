@@ -19,7 +19,7 @@
 class CannedResponseCategory < ApplicationRecord
   belongs_to :account
   belongs_to :user, optional: true
-  has_many :canned_responses, foreign_key: :canned_response_category_id, inverse_of: :category, dependent: :nullify
+  has_many :canned_responses, inverse_of: :category, dependent: :nullify
 
   validates :name, presence: true, length: { maximum: 80 }, uniqueness: { scope: [:account_id, :user_id] }
 
