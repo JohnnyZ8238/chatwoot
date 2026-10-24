@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reply Templates Prototype</title>
+<style>
+:root {
+  --bg: #f6f8fc; --panel: #ffffff; --line: #e4e9f2; --line2: #eef2f8;
+  --fg: #1f2d3d; --fg2: #52637a; --mute: #8a9ab0;
+  --blue: #1f93ff; --blue-bg: #eaf4ff; --blue-d: #0b6fd0;
+  --green-bg: #dcfce7; --green: #166534; --yellow-bg: #fef3c7; --yellow: #92400e;
+  --amber: #f59e0b; --red: #dc2626;
+  --mine: #059669; --mine-bg: #ecfdf5; --co: #4f46e5; --co-bg: #eef2ff;
+  --shadow: 0 12px 32px rgba(15, 23, 42, .16);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 13.5px/1.45 -apple-system, "Segoe UI", Inter, Roboto, sans-serif; overflow: hidden; }
+button { font: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; color: inherit; }
+.app { display: flex; height: 100vh; }
+
+/* left icon rail */
+.rail { width: 56px; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 6px; flex: none; }
+.rail .logo { width: 32px; height: 32px; border-radius: 9px; background: var(--blue); color: #fff; display: grid; place-items: center; font-weight: 700; margin-bottom: 10px; }
+.rail button { width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--fg2); font-size: 18px; }
+.rail button.on { background: var(--blue-bg); color: var(--blue); }
+.rail .sp { flex: 1; }
+
+/* conversation list */
+.clist { width: 270px; background: var(--panel); border-right: 1px solid var(--line); flex: none; display: flex; flex-direction: column; }
+.clist h2 { font-size: 16px; margin: 0; padding: 16px 16px 10px; }
+.citem { padding: 10px 16px; border-top: 1px solid var(--line2); cursor: pointer; }
+.citem.on { background: var(--blue-bg); box-shadow: inset 3px 0 0 var(--blue); }
+.citem b { font-weight: 600; }
+.citem .s { color: var(--fg2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.citem .m { color: var(--mute); font-size: 11.5px; }
+
+/* chat */
+.chat { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.chead { background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 18px; display: flex; align-items: center; gap: 10px; }
+.av { width: 32px; height: 32px; border-radius: 50%; background: #c7d2fe; color: #3730a3; display: grid; place-items: center; font-weight: 600; flex: none; font-size: 12px; }
+.msgs { flex: 1; overflow: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px; }
+.bub { max-width: 68%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; word-wrap: break-word; }
+.bub.in { background: var(--panel); border: 1px solid var(--line); align-self: flex-start; border-top-left-radius: 4px; }
+.bub.out { background: var(--blue); color: #fff; align-self: flex-end; border-top-right-radius: 4px; }
+.bub .t { font-size: 11px; opacity: .7; margin-top: 3px; }
+
+.composer { position: relative; background: var(--panel); border-top: 1px solid var(--line); padding: 10px 16px 12px; }
+.ctabs { display: flex; gap: 14px; font-size: 12.5px; color: var(--fg2); margin-bottom: 6px; }
+.ctabs .on { color: var(--blue); font-weight: 600; }
+.composer textarea { width: 100%; min-height: 76px; max-height: 220px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; outline: none; }
+.composer textarea:focus { border-color: #9cc9ff; box-shadow: 0 0 0 3px #e3f0ff; }
+.cbar { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cbar .sp { flex: 1; }
+.hint { color: var(--mute); font-size: 12px; }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 8px; padding: 6px 12px; }
+.btn:hover { border-color: #c9d4e4; }
+.btn.pri { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn.pri:hover { background: var(--blue-d); }
+.btn.sm { padding: 3px 9px; font-size: 12.5px; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--fg2); }
+.btn.danger { color: var(--red); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* contact panel */
+.cpanel { width: 270px; background: var(--panel); border-left: 1px solid var(--line); flex: none; padding: 16px; overflow: auto; }
+.cpanel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); margin: 16px 0 6px; }
+.kv { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: 12.5px; }
+.kv span:first-child { color: var(--fg2); }
+.kv span:last-child { text-align: right; word-break: break-all; }
+
+/* picker popup */
+.picker { position: absolute; left: 16px; right: 16px; bottom: calc(100% - 4px); background: var(--panel); border: 1px solid #d6dde8; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; z-index: 20; max-width: 640px; }
+.ptabs { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--line2); }
+.ptab { border: 0; background: none; padding: 6px 10px; color: var(--fg2); border-bottom: 2px solid transparent; font-size: 12.5px; }
+.ptab.on { color: var(--blue); border-color: var(--blue); font-weight: 600; }
+.ptab .c { color: var(--mute); font-weight: 400; margin-left: 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 7px 10px; }
+.chip { border: 0; font-size: 11.5px; padding: 2px 9px; border-radius: 99px; background: #f1f5f9; color: #475569; }
+.chip.on { background: var(--blue); color: #fff; }
+.plist { max-height: 250px; overflow: auto; }
+.prow { display: flex; gap: 8px; align-items: flex-start; padding: 7px 12px; border-top: 1px solid #f3f5f9; cursor: pointer; }
+.prow.hl { background: var(--blue-bg); }
+.prow .body { flex: 1; min-width: 0; }
+.prow b { font-weight: 600; }
+.prow .s { color: var(--fg2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.code { font-family: ui-monospace, Consolas, monospace; color: var(--blue); font-size: 11.5px; }
+.star { border: 0; background: none; padding: 0 2px; font-size: 15px; line-height: 1.2; color: #cbd5e1; }
+.star.on { color: var(--amber); }
+.tag { font-size: 10.5px; padding: 1px 6px; border-radius: 4px; font-weight: 500; white-space: nowrap; }
+.tag.mine { background: var(--mine-bg); color: var(--mine); }
+.tag.company { background: var(--co-bg); color: var(--co); }
+.tag.cat { background: #f1f5f9; color: #475569; }
+.pfoot { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-top: 1px solid var(--line2); background: #fafbfd; font-size: 11.5px; color: var(--fg2); }
+.kbd { font-family: ui-monospace, Consolas, monospace; font-size: 10.5px; border: 1px solid #cbd5e1; border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: #475569; background: #fff; }
+.linkb { border: 0; background: none; color: var(--blue); padding: 0; font-size: 12px; }
+.empty { padding: 18px 12px; color: var(--mute); text-align: center; }
+
+/* fill form */
+.fill { background: #fffbeb; padding: 10px 12px; }
+.fill .top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 12px; }
+.fld label { display: block; font-size: 11.5px; color: var(--yellow); margin-bottom: 2px; }
+.fld label i { color: var(--red); font-style: normal; }
+.fld input, .fld select, .fld textarea { width: 100%; border: 1px solid #fcd34d; background: #fff; border-radius: 6px; padding: 5px 8px; outline: none; }
+.fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #fdecc8; }
+.fld.bad input, .fld.bad select, .fld.bad textarea { border-color: var(--red); }
+.dq { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.dq .chip { font-size: 11px; padding: 1px 7px; background: #fff; border: 1px solid #fde68a; color: var(--yellow); }
+.dq .chip.on { background: var(--amber); border-color: var(--amber); color: #fff; }
+.chead b, .chead .hint { white-space: nowrap; }
+.preview { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; white-space: pre-wrap; font-size: 12.5px; }
+.v { border-radius: 4px; padding: 0 4px; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; white-space: nowrap; }
+.v.auto { background: var(--green-bg); color: var(--green); }
+.v.ask { background: var(--yellow-bg); color: var(--yellow); }
+.v.val { font-family: inherit; font-size: inherit; }
+.v.miss { background: #fee2e2; color: #991b1b; }
+
+/* modal */
+.scrim { position: fixed; inset: 0; background: rgba(15, 23, 42, .35); display: grid; place-items: center; z-index: 50; padding: 24px; }
+.modal { background: var(--panel); border-radius: 14px; box-shadow: var(--shadow); width: min(1060px, 100%); height: min(640px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+.mhead { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.mhead h2 { font-size: 15px; margin: 0; }
+.mhead .sp { flex: 1; }
+.mbody { flex: 1; display: flex; min-height: 0; }
+.tree { width: 200px; border-right: 1px solid var(--line); overflow: auto; padding: 8px 0; flex: none; }
+.tree .h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); padding: 10px 14px 4px; }
+.tree button { display: flex; width: 100%; border: 0; background: none; text-align: left; padding: 5px 14px; color: var(--fg); justify-content: space-between; }
+.tree button.on { background: var(--blue-bg); color: var(--blue); font-weight: 600; }
+.tree button .c { color: var(--mute); font-weight: 400; font-size: 12px; }
+.mlist { width: 320px; border-right: 1px solid var(--line); display: flex; flex-direction: column; flex: none; }
+.mtools { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--line2); }
+.mtools input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; outline: none; }
+.mtools select { border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; background: #fff; }
+.mrows { flex: 1; overflow: auto; }
+.mrow { display: flex; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line2); cursor: pointer; align-items: flex-start; }
+.mrow.on { background: var(--blue-bg); }
+.mrow .meta { font-size: 11.5px; color: var(--mute); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.mrow .grip { color: #cbd5e1; cursor: grab; padding-top: 1px; }
+.mrow.drag-over { box-shadow: inset 0 2px 0 var(--blue); }
+.mdetail { flex: 1; overflow: auto; padding: 16px; min-width: 0; }
+.mdetail h3 { margin: 0 0 4px; font-size: 16px; }
+.mdetail .acts { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 12px; }
+.tpl-body { white-space: pre-wrap; background: #fafbfd; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+
+/* settings page */
+.settings { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.shead { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 22px; display: flex; align-items: center; gap: 12px; }
+.shead h1 { font-size: 18px; margin: 0; }
+.shead .sp { flex: 1; }
+.stabs { display: flex; gap: 2px; padding: 0 22px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.stab { border: 0; background: none; padding: 10px 14px; border-bottom: 2px solid transparent; color: var(--fg2); }
+.stab.on { color: var(--blue); border-color: var(--blue); font-weight: 600; }
+.sbody { flex: 1; display: flex; min-height: 0; }
+.cats { width: 220px; background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 10px 0; flex: none; }
+.cats .row { display: flex; align-items: center; gap: 4px; padding: 0 8px 0 0; }
+.cats .row button.n { flex: 1; text-align: left; border: 0; background: none; padding: 6px 16px; display: flex; justify-content: space-between; color: var(--fg); }
+.cats .row button.n.on { color: var(--blue); font-weight: 600; background: var(--blue-bg); }
+.cats .row .ic { border: 0; background: none; color: var(--mute); padding: 2px 4px; visibility: hidden; }
+.cats .row:hover .ic { visibility: visible; }
+.cats .add { padding: 8px 16px; }
+.tbl-wrap { flex: 1; overflow: auto; padding: 16px 22px; }
+.note { background: var(--blue-bg); color: #0b4a8a; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 12.5px; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line2); vertical-align: top; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); font-weight: 600; background: #fafbfd; }
+td .s { color: var(--fg2); font-size: 12px; max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+td.small { min-width: 110px; }
+td.acts { white-space: nowrap; text-align: right; }
+
+/* template editor */
+.editor { display: flex; min-height: 0; flex: 1; }
+.eform { flex: 1.2; overflow: auto; padding: 16px; border-right: 1px solid var(--line); }
+.eprev { flex: 1; overflow: auto; padding: 16px; background: #fafbfd; }
+.frow { display: grid; grid-template-columns: 1fr 140px; gap: 10px; }
+.frow3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.f { margin-bottom: 12px; }
+.f > label { display: block; font-size: 12px; font-weight: 600; color: var(--fg2); margin-bottom: 4px; }
+.f input, .f select, .f textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; outline: none; background: #fff; }
+.f textarea { min-height: 150px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+.f input:focus, .f select:focus, .f textarea:focus { border-color: #9cc9ff; box-shadow: 0 0 0 3px #e3f0ff; }
+.f .err { color: var(--red); font-size: 12px; margin-top: 3px; }
+.vbar { display: flex; gap: 6px; margin-bottom: 6px; position: relative; flex-wrap: wrap; }
+.vmenu { position: absolute; top: 100%; left: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 6px; z-index: 5; width: 360px; max-height: 320px; overflow: auto; }
+.vmenu .g { font-size: 11px; text-transform: uppercase; color: var(--mute); padding: 6px 8px 2px; }
+.vmenu button { display: flex; width: 100%; border: 0; background: none; text-align: left; padding: 4px 8px; border-radius: 6px; justify-content: space-between; gap: 8px; }
+.vmenu button:hover { background: var(--blue-bg); }
+.vmenu button span:last-child { color: var(--mute); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fields { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.fields .fr { display: grid; grid-template-columns: 110px 1fr 110px 1fr 70px; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line2); align-items: center; font-size: 12.5px; }
+.fields .fr:last-child { border-bottom: 0; }
+.fields .fr.h { background: #fafbfd; color: var(--mute); font-size: 11px; text-transform: uppercase; }
+.fields input, .fields select { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: #fff; }
+.small { font-size: 12px; color: var(--fg2); }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1f2d3d; color: #fff; padding: 8px 16px; border-radius: 8px; z-index: 99; font-size: 13px; }
+.who { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg2); }
+.who select { border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; background: #fff; }
+.proto { background: #fff7ed; color: #9a3412; font-size: 11.5px; padding: 2px 8px; border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+'use strict';
+/* ---------- data ---------- */
+const USERS = {
+  sean: { id: 'sean', name: 'Sean Mo', first_name: 'Sean', email: 'sean@ivybid.ca', role: 'Administrator' },
+  lily: { id: 'lily', name: 'Lily Chen', first_name: 'Lily', email: 'lily@ivybid.ca', role: 'Agent' },
+};
+const ACCOUNT = { name: 'ivybid', site: 'ivybid.ca', support_email: 'help@ivybid.ca' };
+const CONVOS = [
+  { id: 1042, inbox: 'Website chat', status: 'Open', contact: { name: 'Emily Zhang', email: 'emily.zhang@gmail.com', phone: '+1 416 555 0182', city: 'Toronto', country: 'Canada' },
+    attrs: { order_no: 'IVY-20481', lot: "Agave titanota 'White Ice'", amount: '$186.00', tracking_no: '' },
+    msgs: [{ in: 1, t: 'Hi! I won the Agave titanota last week. When will it ship?', at: '10:12' }] },
+  { id: 1039, inbox: 'WhatsApp', status: 'Open', contact: { name: 'Marcus Lee', email: 'marcus.lee@outlook.com', phone: '+1 604 555 0144', city: 'Vancouver', country: 'Canada' },
+    attrs: { order_no: 'IVY-20455', lot: 'Monstera Thai Constellation', amount: '$240.00', tracking_no: '7489 2201 5512' },
+    msgs: [{ in: 1, t: 'The plant arrived but two leaves are yellow. Can I get a partial refund?', at: '09:40' }] },
+  { id: 1031, inbox: 'Instagram', status: 'Pending', contact: { name: 'Sofia Rossi', email: '', phone: '', city: 'Montréal', country: 'Canada' },
+    attrs: { order_no: '', lot: '', amount: '', tracking_no: '' },
+    msgs: [{ in: 1, t: 'How do the auctions work? Do I pay when I bid?', at: 'Yesterday' }] },
+];
+
+/* auto variables: everything Chatwoot already knows */
+const pad = n => String(n).padStart(2, '0');
+const fmtDate = d => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+const addDays = n => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
+const nextBizDay = () => { const d = new Date(); do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6); return d; };
+const AUTO = [
+  { g: 'Contact', k: 'contact.name', l: 'Full name', f: c => c.contact.name },
+  { g: 'Contact', k: 'contact.first_name', l: 'First name', f: c => (c.contact.name || '').split(' ')[0] },
+  { g: 'Contact', k: 'contact.last_name', l: 'Last name', f: c => (c.contact.name || '').split(' ').slice(1).join(' ') },
+  { g: 'Contact', k: 'contact.email', l: 'Email', f: c => c.contact.email },
+  { g: 'Contact', k: 'contact.phone', l: 'Phone', f: c => c.contact.phone },
+  { g: 'Contact', k: 'contact.city', l: 'City', f: c => c.contact.city },
+  { g: 'Contact', k: 'contact.country', l: 'Country', f: c => c.contact.country },
+  { g: 'Conversation', k: 'conversation.id', l: 'Conversation #', f: c => '#' + c.id },
+  { g: 'Conversation', k: 'conversation.inbox', l: 'Channel', f: c => c.inbox },
+  { g: 'Conversation', k: 'conversation.order_no', l: 'Order number (attribute)', f: c => c.attrs.order_no },
+  { g: 'Conversation', k: 'conversation.lot', l: 'Plant / lot (attribute)', f: c => c.attrs.lot },
+  { g: 'Conversation', k: 'conversation.amount', l: 'Order amount (attribute)', f: c => c.attrs.amount },
+  { g: 'Conversation', k: 'conversation.tracking_no', l: 'Tracking number (attribute)', f: c => c.attrs.tracking_no },
+  { g: 'Agent', k: 'agent.name', l: 'Your full name', f: () => me().name },
+  { g: 'Agent', k: 'agent.first_name', l: 'Your first name', f: () => me().first_name },
+  { g: 'Agent', k: 'agent.email', l: 'Your email', f: () => me().email },
+  { g: 'Account', k: 'account.name', l: 'Company name', f: () => ACCOUNT.name },
+  { g: 'Account', k: 'account.site', l: 'Website', f: () => ACCOUNT.site },
+  { g: 'Account', k: 'account.support_email', l: 'Support email', f: () => ACCOUNT.support_email },
+  { g: 'Date & time', k: 'date.today', l: 'Today', f: () => fmtDate(new Date()) },
+  { g: 'Date & time', k: 'date.tomorrow', l: 'Tomorrow', f: () => fmtDate(addDays(1)) },
+  { g: 'Date & time', k: 'date.next_business_day', l: 'Next business day', f: () => fmtDate(nextBizDay()) },
+  { g: 'Date & time', k: 'date.in_3_days', l: 'In 3 days', f: () => fmtDate(addDays(3)) },
+  { g: 'Date & time', k: 'date.in_7_days', l: 'In 7 days', f: () => fmtDate(addDays(7)) },
+  { g: 'Date & time', k: 'time.now', l: 'Current time', f: () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); } },
+  { g: 'Date & time', k: 'time.greeting', l: 'Good morning / afternoon / evening', f: () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; } },
+];
+const AUTO_BY = Object.fromEntries(AUTO.map(a => [a.k, a]));
+const FIELD_TYPES = { text: 'Short text', long: 'Long text', number: 'Number', money: 'Amount ($)', date: 'Date', select: 'Dropdown', yesno: 'Yes / No' };
+
+const SEED = {
+  cats: { company: ['Shipping', 'Refunds & returns', 'Auction rules', 'Plant care', 'Greetings'], sean: ['Repeat buyers', 'Uncategorized'], lily: ['My shortcuts'] },
+  templates: [
+    { id: 't1', scope: 'company', cat: 'Shipping', title: 'Shipping date', code: 'ship', uses: 132,
+      body: '{{time.greeting}} {{contact.first_name | default: "there"}}, thanks for your patience!\n\nYour order {{conversation.order_no}} ({{conversation.lot}}) ships on {{ship_date}} by {{carrier}}. You’ll get a text with the tracking number once it’s on its way.\n\nIf it’s below 5°C where you are, we’ll hold it until it warms up so your plant arrives safe.\n\n— {{agent.first_name}}, {{account.name}}',
+      fields: [{ key: 'ship_date', label: 'Ship date', type: 'date', required: true }, { key: 'carrier', label: 'Carrier', type: 'select', options: ['Canada Post Xpresspost', 'Purolator', 'UPS Express'], def: 'Canada Post Xpresspost', required: true }] },
+    { id: 't2', scope: 'company', cat: 'Shipping', title: 'Tracking number', code: 'track', uses: 88,
+      body: 'Hi {{contact.first_name | default: "there"}}, your plant is on the way! Tracking number: {{tracking}}\n\nYou can follow it at canadapost.ca. Please open the box as soon as it arrives.',
+      fields: [{ key: 'tracking', label: 'Tracking number', type: 'text', required: true, fromAttr: 'conversation.tracking_no' }] },
+    { id: 't3', scope: 'company', cat: 'Shipping', title: 'Shipping delay apology', code: 'delay', uses: 41,
+      body: 'Hi {{contact.first_name | default: "there"}}, I’m sorry — order {{conversation.order_no}} is delayed because {{reason}}. The new ship date is {{new_date}}.\n\n{{gesture}}',
+      fields: [{ key: 'reason', label: 'Reason', type: 'select', options: ['of a cold snap on the route', 'the grower needs a few more days', 'the carrier is backed up'], required: true }, { key: 'new_date', label: 'New ship date', type: 'date', required: true }, { key: 'gesture', label: 'Goodwill note', type: 'long', def: 'As a thank-you for waiting, shipping on your next order is on us.' }] },
+    { id: 't4', scope: 'company', cat: 'Refunds & returns', title: 'Partial refund offer', code: 'prefund', uses: 23,
+      body: 'Hi {{contact.first_name | default: "there"}}, I’m sorry the {{conversation.lot | default: "plant"}} arrived with {{issue}}. We’d like to refund {{refund}} of your {{conversation.amount}} order. It will be back on your card in {{days}} business days.\n\nCould you send one more photo of the whole plant so we can share it with the grower?',
+      fields: [{ key: 'issue', label: 'Issue', type: 'select', options: ['yellow leaves', 'a broken leaf', 'root rot', 'pests'], required: true }, { key: 'refund', label: 'Refund amount', type: 'money', required: true }, { key: 'days', label: 'Business days', type: 'number', def: '3-5' }] },
+    { id: 't5', scope: 'company', cat: 'Refunds & returns', title: 'Return not possible (live plants)', code: 'noreturn', uses: 9,
+      body: 'Hi {{contact.first_name | default: "there"}}, live plants can’t be shipped back safely, so we don’t take returns. If anything is wrong on arrival, send us a photo within 48 hours and we’ll make it right.' , fields: [] },
+    { id: 't6', scope: 'company', cat: 'Auction rules', title: 'How bidding works', code: 'bid', uses: 64,
+      body: '{{time.greeting}}! On {{account.site}} you only pay if you win. When an auction ends, the winner gets an email and has {{pay_hours}} hours to pay. Bids can’t be withdrawn, so please bid only what you’re happy to pay.',
+      fields: [{ key: 'pay_hours', label: 'Hours to pay', type: 'number', def: '48' }] },
+    { id: 't7', scope: 'company', cat: 'Plant care', title: 'Unboxing tips', code: 'unbox', uses: 37,
+      body: 'Welcome home, {{contact.first_name | default: "plant friend"}}! A few tips for the first week:\n• Keep it out of direct sun for {{shade_days}} days\n• Don’t water right away{{water_note}}\n• Leave it in its nursery pot until new growth appears',
+      fields: [{ key: 'shade_days', label: 'Days in shade', type: 'number', def: '5' }, { key: 'water_note', label: 'Watering note', type: 'select', options: ['', ' — wait until the soil is dry', ' — succulents can wait a full week'], def: '' }] },
+    { id: 't8', scope: 'company', cat: 'Greetings', title: 'Closing the chat', code: 'bye', uses: 150,
+      body: 'Is there anything else I can help with today? If not, I’ll close this chat — you can always write to us here or at {{account.support_email}}. Happy growing! 🌱', fields: [] },
+    { id: 't9', scope: 'sean', cat: 'Repeat buyers', title: 'Thanks, repeat buyer', code: 'vip', uses: 18,
+      body: 'Hi {{contact.first_name}}, always great to see you back! I’ve added a note to pack your {{conversation.lot | default: "order"}} with extra care. {{perk}}',
+      fields: [{ key: 'perk', label: 'Perk', type: 'select', options: ['Free shipping on this one.', '10% off your next win.', ''], def: 'Free shipping on this one.' }] },
+    { id: 't10', scope: 'sean', cat: 'Uncategorized', title: 'Winter heat-pack packing', code: 'heat', uses: 12,
+      body: 'When it’s cold we add a 72-hour heat pack and an insulated wrap, so {{conversation.lot | default: "your plant"}} stays warm all the way to {{contact.city | default: "you"}}.', fields: [] },
+    { id: 't11', scope: 'lily', cat: 'My shortcuts', title: 'Checking now', code: 'chk', uses: 30,
+      body: 'Thanks {{contact.first_name | default: ""}}! Let me check that for you — one moment please.', fields: [] },
+  ],
+  fav: { sean: ['t1', 't10', 't4'], lily: ['t8'] },
+  recent: { sean: ['t8', 't2', 't6'], lily: [] },
+};
+
+/* ---------- state ---------- */
+const KEY = 'cw-reply-templates-proto-v1';
+let DB;
+try { DB = JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { DB = null; }
+if (!DB || !DB.templates) DB = JSON.parse(JSON.stringify(SEED));
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) {} };
+
+const S = {
+  user: 'sean', view: 'chat', convo: 1042,
+  draft: {},                     // convo id -> text
+  pk: null,                      // picker: { tab, cat, q, idx, start, end, fill: tplId, vals, bad }
+  lib: null,                     // Ctrl+K: { node, q, sort, sel, vals, bad }
+  set: { tab: 'company', cat: '', ed: null }, // settings
+};
+const me = () => USERS[S.user];
+const isAdmin = () => me().role === 'Administrator';
+const convo = () => CONVOS.find(c => c.id === S.convo);
+const tpl = id => DB.templates.find(t => t.id === id);
+const favs = () => (DB.fav[S.user] || (DB.fav[S.user] = []));
+const recents = () => (DB.recent[S.user] || (DB.recent[S.user] = []));
+const visible = () => DB.templates.filter(t => t.scope === 'company' || t.scope === S.user);
+const isFav = id => favs().includes(id);
+const catsOf = scope => (DB.cats[scope] || (DB.cats[scope] = []));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const human = k => k.replace(/[_.]+/g, ' ').replace(/^\w/, c => c.toUpperCase());
+let toastT;
+function toast(m) { let t = document.querySelector('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); } t.textContent = m; clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 2200); }
+
+/* ---------- variables ---------- */
+const VAR_RE = /\{\{\s*([\w.]+)\s*(?:\|\s*default:\s*"([^"]*)"\s*)?\}\}/g;
+function askKeys(body) { const out = []; body.replace(VAR_RE, (_, k) => { if (!AUTO_BY[k] && !out.includes(k)) out.push(k); }); return out; }
+function fieldsOf(t) { return askKeys(t.body).map(k => Object.assign({ key: k, label: human(k), type: 'text' }, (t.fields || []).find(f => f.key === k) || {})); }
+function initVals(t, c) {
+  const v = {};
+  fieldsOf(t).forEach(f => { v[f.key] = f.fromAttr && AUTO_BY[f.fromAttr] ? (AUTO_BY[f.fromAttr].f(c) || f.def || '') : (f.def != null ? f.def : (f.type === 'select' ? (f.options || [])[0] || '' : '')); });
+  return v;
+}
+function fmtVal(f, v) {
+  if (v === '' || v == null) return '';
+  if (f.type === 'date') { const d = new Date(v + 'T12:00:00'); return isNaN(d) ? v : fmtDate(d); }
+  if (f.type === 'money') return /^\$/.test(v) ? v : '$' + v;
+  return v;
+}
+function resolve(t, c, vals) { // -> plain text
+  const fs = Object.fromEntries(fieldsOf(t).map(f => [f.key, f]));
+  return t.body.replace(VAR_RE, (_, k, d) => {
+    if (AUTO_BY[k]) { const v = AUTO_BY[k].f(c); return v || (d != null ? d : ''); }
+    const v = fmtVal(fs[k] || {}, (vals || {})[k]); return v || (d != null ? d : '');
+  }).replace(/[ \t]+([,.!?])/g, '$1');
+}
+function previewHTML(t, c, vals, opts) { // body with coloured chips
+  opts = opts || {};
+  const fs = Object.fromEntries(fieldsOf(t).map(f => [f.key, f]));
+  let out = '', last = 0; const body = t.body;
+  body.replace(VAR_RE, (m, k, d, i) => {
+    out += esc(body.slice(last, i)); last = i + m.length;
+    if (AUTO_BY[k]) {
+      const v = c ? AUTO_BY[k].f(c) : '';
+      out += opts.raw || !c ? `<span class="v auto">${esc(k)}</span>` : v ? `<span class="v auto val">${esc(v)}</span>` : d != null ? `<span class="v auto val" title="fallback">${esc(d) || '∅'}</span>` : `<span class="v miss" title="No value">${esc(k)}</span>`;
+    } else {
+      const f = fs[k] || { label: human(k) }, v = fmtVal(f, (vals || {})[k]);
+      out += opts.raw || !vals ? `<span class="v ask">${esc(f.label)}</span>` : v ? `<span class="v ask val">${esc(v)}</span>` : `<span class="v ask">${esc(f.label)}</span>`;
+    }
+    return m;
+  });
+  return out + esc(body.slice(last));
+}
+function fieldInput(f, v, id) {
+  const a = `data-fk="${esc(f.key)}" id="${id}"`;
+  if (f.type === 'select') return `<select ${a}>${(f.options || []).map(o => `<option value="${esc(o)}" ${o === v ? 'selected' : ''}>${esc(o.trim() || '(none)')}</option>`).join('')}</select>`;
+  if (f.type === 'yesno') return `<select ${a}><option ${v === 'Yes' ? 'selected' : ''}>Yes</option><option ${v === 'No' ? 'selected' : ''}>No</option></select>`;
+  if (f.type === 'long') return `<textarea ${a} rows="2">${esc(v)}</textarea>`;
+  if (f.type === 'date') {
+    const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    const quick = [['Today', new Date()], ['Tomorrow', addDays(1)], ['Next biz day', nextBizDay()], ['+3 days', addDays(3)], ['+7 days', addDays(7)]];
+    return `<input ${a} type="date" value="${esc(v)}"><div class="dq">${quick.map(([l, d]) => `<button type="button" class="chip ${v === iso(d) ? 'on' : ''}" data-dq="${esc(f.key)}" data-dv="${iso(d)}">${l}</button>`).join('')}</div>`;
+  }
+  const ty = f.type === 'date' ? 'date' : f.type === 'number' ? 'text' : 'text';
+  return `<input ${a} type="${ty}" value="${esc(v)}" ${f.type === 'money' ? 'placeholder="e.g. 40.00"' : ''} autocomplete="off">`;
+}
+function fieldsForm(t, vals, bad, prefix) {
+  const fs = fieldsOf(t);
+  if (!fs.length) return '';
+  return `<div class="fgrid">${fs.map((f, i) => `<div class="fld ${bad && bad.includes(f.key) ? 'bad' : ''}"><label for="${prefix}${i}">${esc(f.label)}${f.required ? ' <i>*</i>' : ''}</label>${fieldInput(f, vals[f.key] || '', prefix + i)}</div>`).join('')}</div>`;
+}
+function missing(t, vals) { return fieldsOf(t).filter(f => f.required && !String(vals[f.key] || '').trim()).map(f => f.key); }
+function markUsed(id) { const t = tpl(id); t.uses = (t.uses || 0) + 1; t.lastUsed = Date.now(); const r = recents(); const i = r.indexOf(id); if (i >= 0) r.splice(i, 1); r.unshift(id); r.length = Math.min(r.length, 15); save(); }
+function toggleFav(id) { const f = favs(), i = f.indexOf(id); if (i >= 0) f.splice(i, 1); else f.push(id); save(); }
+
+/* ---------- searching ---------- */
+function match(t, q) {
+  if (!q) return 1;
+  q = q.toLowerCase();
+  if (t.code === q) return 100; if (t.code.startsWith(q)) return 60;
+  if (t.title.toLowerCase().startsWith(q)) return 40; if (t.title.toLowerCase().includes(q)) return 30;
+  if ((t.cat || '').toLowerCase().includes(q)) return 15; if (t.body.toLowerCase().includes(q)) return 10;
+  return 0;
+}
+function pickerItems() {
+  const p = S.pk; let list = visible();
+  if (p.tab === 'fav') list = favs().map(tpl).filter(Boolean);
+  else if (p.tab === 'recent') list = recents().map(tpl).filter(Boolean);
+  else if (p.tab === 'mine') list = list.filter(t => t.scope === S.user);
+  else if (p.tab === 'company') list = list.filter(t => t.scope === 'company');
+  if (p.cat) list = list.filter(t => t.cat === p.cat);
+  const scored = list.map((t, i) => ({ t, s: match(t, p.q), i })).filter(x => x.s > 0);
+  if (p.tab === 'fav' || p.tab === 'recent') scored.sort((a, b) => b.s - a.s || a.i - b.i);
+  else scored.sort((a, b) => b.s - a.s || (isFav(b.t.id) - isFav(a.t.id)) || (b.t.uses || 0) - (a.t.uses || 0));
+  return scored.map(x => x.t);
+}
+
+/* ---------- render: shell ---------- */
+function render() {
+  const app = document.getElementById('app');
+  const focus = document.activeElement, fid = focus && focus.id, sel = focus && 'selectionStart' in focus ? [focus.selectionStart, focus.selectionEnd] : null;
+  app.innerHTML = rail() + (S.view === 'chat' ? chatView() : settingsView());
+  let mod = document.getElementById('modal'); if (mod) mod.remove();
+  if (S.lib) document.body.insertAdjacentHTML('beforeend', libView());
+  else if (S.set.ed) document.body.insertAdjacentHTML('beforeend', editorView());
+  if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); if (sel && 'selectionStart' in el) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
+  const pl = document.querySelector('.plist .prow.hl'); if (pl) pl.scrollIntoView({ block: 'nearest' });
+  const ml = document.querySelector('.mrows .mrow.on'); if (ml) ml.scrollIntoView({ block: 'nearest' });
+}
+function rail() {
+  return `<nav class="rail"><div class="logo">iv</div>
+    <button class="${S.view === 'chat' ? 'on' : ''}" data-go="chat" title="Conversations">💬</button>
+    <button title="Contacts">👥</button><button title="Reports">📊</button>
+    <button class="${S.view === 'settings' ? 'on' : ''}" data-go="settings" title="Settings → Reply templates">⚙️</button>
+    <div class="sp"></div><button data-act="reset" title="Reset prototype data">↺</button></nav>`;
+}
+function whoSel() {
+  return `<label class="who">Signed in as <select id="whoSel">${Object.values(USERS).map(u => `<option value="${u.id}" ${u.id === S.user ? 'selected' : ''}>${esc(u.name)} · ${u.role}</option>`).join('')}</select></label>`;
+}
+
+/* ---------- chat view ---------- */
+function chatView() {
+  const c = convo();
+  const list = CONVOS.map(x => `<div class="citem ${x.id === S.convo ? 'on' : ''}" data-convo="${x.id}"><div style="display:flex;justify-content:space-between"><b>${esc(x.contact.name)}</b><span class="m">${esc(x.msgs[x.msgs.length - 1].at)}</span></div><div class="s">${esc(x.msgs[x.msgs.length - 1].t)}</div><div class="m">${esc(x.inbox)} · #${x.id}</div></div>`).join('');
+  const msgs = c.msgs.map(m => `<div class="bub ${m.in ? 'in' : 'out'}">${esc(m.t)}<div class="t">${esc(m.at)}${m.in ? '' : ' · ' + esc(m.by || '')}</div></div>`).join('');
+  const kv = (k, v) => `<div class="kv"><span>${k}</span><span>${esc(v || '—')}</span></div>`;
+  return `<aside class="clist"><h2>Conversations</h2>${list}</aside>
+  <main class="chat">
+    <div class="chead"><div class="av">${esc(c.contact.name.split(' ').map(s => s[0]).join(''))}</div><div><b>${esc(c.contact.name)}</b><div class="hint">${esc(c.inbox)} · #${c.id}</div></div><div style="flex:1"></div><span class="proto">Prototype</span>${whoSel()}</div>
+    <div class="msgs" id="msgs">${msgs}</div>
+    <div class="composer">
+      ${S.pk ? pickerView() : ''}
+      <div class="ctabs"><span class="on">Reply</span><span>Private note</span></div>
+      <textarea id="editor" placeholder="Type / for reply templates, or press Ctrl+K to browse the library">${esc(S.draft[c.id] || '')}</textarea>
+      <div class="cbar"><button class="btn sm" data-act="openlib" title="Ctrl+K">📚 Templates</button><span class="hint">Type <span class="kbd">/</span> to search · <span class="kbd">Ctrl</span>+<span class="kbd">K</span> library</span><span class="sp"></span><button class="btn pri" data-act="send">Send</button></div>
+    </div>
+  </main>
+  <aside class="cpanel"><div style="display:flex;gap:10px;align-items:center"><div class="av">${esc(c.contact.name.split(' ').map(s => s[0]).join(''))}</div><div><b>${esc(c.contact.name)}</b><div class="hint">${esc(c.contact.city)}, ${esc(c.contact.country)}</div></div></div>
+    <h3>Contact</h3>${kv('Email', c.contact.email)}${kv('Phone', c.contact.phone)}
+    <h3>Conversation attributes</h3>${kv('Order', c.attrs.order_no)}${kv('Plant', c.attrs.lot)}${kv('Amount', c.attrs.amount)}${kv('Tracking', c.attrs.tracking_no)}
+    <p class="hint" style="margin-top:14px">Templates fill <span class="v auto">green</span> variables from here automatically. <span class="v ask">Yellow</span> ones are asked when you pick the template.</p>
+  </aside>`;
+}
+function pickerView() {
+  const p = S.pk, c = convo();
+  if (p.fill) {
+    const t = tpl(p.fill);
+    return `<div class="picker" id="picker"><div class="fill"><div class="top"><button class="btn sm ghost" data-act="pkback">← Back</button><b>${esc(t.title)}</b><span class="code">/${esc(t.code)}</span><span class="sp" style="flex:1"></span><span class="hint"><span class="kbd">Tab</span> next · <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> insert · <span class="kbd">Esc</span> back</span></div>
+      ${fieldsForm(t, p.vals, p.bad, 'pkf')}
+      <div class="preview">${previewHTML(t, c, p.vals)}</div>
+      <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px"><button class="btn sm" data-act="pkback">Cancel</button><button class="btn sm pri" data-act="pkinsert">Insert</button></div></div></div>`;
+  }
+  const items = pickerItems(), vis = visible();
+  const base = p.tab === 'fav' ? favs().map(tpl) : p.tab === 'recent' ? recents().map(tpl) : p.tab === 'mine' ? vis.filter(t => t.scope === S.user) : p.tab === 'company' ? vis.filter(t => t.scope === 'company') : vis;
+  const cats = [...new Set(base.filter(Boolean).map(t => t.cat))];
+  const tabs = [['fav', '★ Favorites', favs().length], ['recent', 'Recent', recents().length], ['mine', 'Mine', vis.filter(t => t.scope === S.user).length], ['company', 'Company', vis.filter(t => t.scope === 'company').length], ['all', 'All', vis.length]];
+  return `<div class="picker" id="picker">
+    <div class="ptabs">${tabs.map(([k, l, n]) => `<button class="ptab ${p.tab === k ? 'on' : ''}" data-pktab="${k}">${l}<span class="c">${n}</span></button>`).join('')}</div>
+    <div class="chips"><button class="chip ${!p.cat ? 'on' : ''}" data-pkcat="">All</button>${cats.map(x => `<button class="chip ${p.cat === x ? 'on' : ''}" data-pkcat="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <div class="plist">${items.length ? items.map((t, i) => `<div class="prow ${i === p.idx ? 'hl' : ''}" data-pkpick="${t.id}"><button class="star ${isFav(t.id) ? 'on' : ''}" data-fav="${t.id}" title="Pin to Favorites">${isFav(t.id) ? '★' : '☆'}</button><div class="body"><b>${esc(t.title)}</b> <span class="code">/${esc(t.code)}</span> <span class="tag ${t.scope === 'company' ? 'company' : 'mine'}">${t.scope === 'company' ? 'Company' : 'Mine'}</span> <span class="tag cat">${esc(t.cat)}</span><div class="s">${esc(resolve(t, c, initVals(t, c)).replace(/\n+/g, ' '))}</div></div></div>`).join('')
+      : `<div class="empty">${p.tab === 'fav' && !favs().length ? 'No favorites yet — click ☆ on any template to pin it here.' : p.tab === 'recent' && !recents().length ? 'Templates you use will show up here.' : `Nothing matches “${esc(p.q)}”.`}</div>`}</div>
+    <div class="pfoot"><span><span class="kbd">↑</span><span class="kbd">↓</span> move · <span class="kbd">Enter</span> pick · <span class="kbd">←</span><span class="kbd">→</span> tabs · <span class="kbd">Esc</span> close</span><button class="linkb" data-act="openlib">Browse library <span class="kbd">Ctrl</span>+<span class="kbd">K</span></button></div>
+  </div>`;
+}
+
+/* ---------- Ctrl+K library ---------- */
+function libItems() {
+  const L = S.lib; let list = visible();
+  const [kind, val] = L.node.split(':');
+  if (L.q && (kind === 'fav' || kind === 'recent')) list = list; // typing searches every template, not just this shortlist
+  else if (kind === 'fav') list = favs().map(tpl).filter(Boolean);
+  else if (kind === 'recent') list = recents().map(tpl).filter(Boolean);
+  else if (kind === 'company') list = list.filter(t => t.scope === 'company' && (!val || t.cat === val));
+  else if (kind === 'mine') list = list.filter(t => t.scope === S.user && (!val || t.cat === val));
+  let rows = list.map((t, i) => ({ t, s: match(t, L.q), i })).filter(x => x.s > 0);
+  const keepOrder = (kind === 'fav' || kind === 'recent') && L.sort === 'default';
+  rows.sort((a, b) => L.q && b.s !== a.s ? b.s - a.s : keepOrder ? a.i - b.i : L.sort === 'az' ? a.t.title.localeCompare(b.t.title) : L.sort === 'recent' ? (b.t.lastUsed || 0) - (a.t.lastUsed || 0) : (b.t.uses || 0) - (a.t.uses || 0));
+  return rows.map(x => x.t);
+}
+function libView() {
+  const L = S.lib, c = convo(), vis = visible(), items = libItems();
+  if (!items.find(t => t.id === L.sel)) { L.sel = items[0] ? items[0].id : null; L.vals = L.sel ? initVals(tpl(L.sel), c) : {}; L.bad = null; }
+  const t = L.sel ? tpl(L.sel) : null;
+  const node = (id, label, n) => `<button class="${L.node === id ? 'on' : ''}" data-node="${esc(id)}"><span>${label}</span><span class="c">${n}</span></button>`;
+  const cnt = (scope, cat) => vis.filter(x => x.scope === scope && x.cat === cat).length;
+  const dragOK = L.node === 'fav' && !L.q && L.sort === 'default';
+  const canEdit = t && (t.scope === S.user || isAdmin());
+  return `<div class="scrim" id="modal" data-act="closelib"><div class="modal" role="dialog" aria-label="Reply template library">
+    <div class="mhead"><h2>📚 Reply templates</h2><span class="hint">for ${esc(c.contact.name)} · #${c.id}</span><span class="sp"></span><button class="btn sm" data-act="newtpl">+ New template</button><button class="btn sm ghost" data-act="closelib" title="Esc">✕</button></div>
+    <div class="mbody">
+      <div class="tree">
+        ${node('fav', '★ Favorites', favs().length)}${node('recent', '🕘 Recent', recents().length)}${node('all', 'All templates', vis.length)}
+        <div class="h">Company</div>${node('company', 'All company', vis.filter(x => x.scope === 'company').length)}${catsOf('company').map(k => node('company:' + k, '› ' + esc(k), cnt('company', k))).join('')}
+        <div class="h">Mine</div>${node('mine', 'All mine', vis.filter(x => x.scope === S.user).length)}${catsOf(S.user).map(k => node('mine:' + k, '› ' + esc(k), cnt(S.user, k))).join('')}
+      </div>
+      <div class="mlist">
+        <div class="mtools"><input id="libq" placeholder="Search title, /shortcut or text" value="${esc(L.q)}" autocomplete="off"><select id="libsort" title="Sort">${[['default', L.node === 'fav' ? 'My order' : L.node === 'recent' ? 'Last used' : 'Most used'], ['used', 'Most used'], ['recent', 'Recently used'], ['az', 'A → Z']].filter((x, i, a) => a.findIndex(y => y[1] === x[1]) === i).map(([v, l]) => `<option value="${v}" ${L.sort === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        ${dragOK && items.length > 1 ? '<div class="hint" style="padding:6px 12px;border-bottom:1px solid var(--line2)">Drag ⋮⋮ to reorder your favorites</div>' : ''}
+        <div class="mrows">${items.length ? items.map(x => `<div class="mrow ${x.id === L.sel ? 'on' : ''}" data-lsel="${x.id}" ${dragOK ? `draggable="true" data-drag="${x.id}"` : ''}>${dragOK ? '<span class="grip">⋮⋮</span>' : ''}<button class="star ${isFav(x.id) ? 'on' : ''}" data-fav="${x.id}">${isFav(x.id) ? '★' : '☆'}</button><div style="flex:1;min-width:0"><b>${esc(x.title)}</b><div class="meta"><span class="code">/${esc(x.code)}</span><span class="tag ${x.scope === 'company' ? 'company' : 'mine'}">${x.scope === 'company' ? 'Company' : 'Mine'}</span><span>${esc(x.cat)}</span><span>· used ${x.uses || 0}×</span></div></div></div>`).join('') : '<div class="empty">No templates here.</div>'}</div>
+      </div>
+      <div class="mdetail">${t ? `
+        <h3>${esc(t.title)}</h3><div class="meta small"><span class="code">/${esc(t.code)}</span> · <span class="tag ${t.scope === 'company' ? 'company' : 'mine'}">${t.scope === 'company' ? 'Company' : 'Mine'}</span> · ${esc(t.cat)} · used ${t.uses || 0}×</div>
+        <div class="acts"><button class="btn sm" data-fav="${t.id}">${isFav(t.id) ? '★ Unpin' : '☆ Pin to Favorites'}</button>${t.scope === 'company' ? `<button class="btn sm" data-act="dup" data-id="${t.id}">Copy to Mine</button>` : ''}${canEdit ? `<button class="btn sm" data-act="edit" data-id="${t.id}">Edit</button>` : ''}</div>
+        ${fieldsOf(t).length ? `<div class="fill" style="border-radius:10px;margin-bottom:10px">${fieldsForm(t, L.vals, L.bad, 'lbf')}</div>` : ''}
+        <div class="tpl-body">${previewHTML(t, c, L.vals)}</div>
+        <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:12px"><span class="hint" style="align-self:center;margin-right:auto"><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> insert</span><button class="btn pri" data-act="libinsert">Insert reply</button></div>` : '<div class="empty">Pick a template on the left.</div>'}
+      </div>
+    </div></div></div>`;
+}
+
+/* ---------- settings ---------- */
+function settingsView() {
+  const st = S.set, scope = st.tab === 'company' ? 'company' : S.user, canEdit = scope !== 'company' || isAdmin();
+  const cats = catsOf(scope), list = DB.templates.filter(t => t.scope === scope && (!st.cat || t.cat === st.cat));
+  return `<main class="settings">
+    <div class="shead"><h1>Reply templates</h1><span class="proto">Prototype</span><span class="sp"></span>${whoSel()}${canEdit ? '<button class="btn pri" data-act="newtpl">+ New template</button>' : ''}</div>
+    <div class="stabs"><button class="stab ${st.tab === 'company' ? 'on' : ''}" data-stab="company">Company library</button><button class="stab ${st.tab === 'mine' ? 'on' : ''}" data-stab="mine">My library</button></div>
+    <div class="sbody">
+      <div class="cats">
+        <div class="row"><button class="n ${!st.cat ? 'on' : ''}" data-scat=""><span>All</span><span class="small">${DB.templates.filter(t => t.scope === scope).length}</span></button></div>
+        ${cats.map((k, i) => `<div class="row"><button class="n ${st.cat === k ? 'on' : ''}" data-scat="${esc(k)}"><span>${esc(k)}</span><span class="small">${DB.templates.filter(t => t.scope === scope && t.cat === k).length}</span></button>${canEdit ? `<button class="ic" data-catup="${i}" title="Move up">↑</button><button class="ic" data-catren="${esc(k)}" title="Rename">✎</button><button class="ic" data-catdel="${esc(k)}" title="Delete">🗑</button>` : ''}</div>`).join('')}
+        ${canEdit ? '<div class="add"><button class="btn sm" data-act="newcat">+ Category</button></div>' : ''}
+      </div>
+      <div class="tbl-wrap">
+        ${st.tab === 'company' ? `<div class="note">${isAdmin() ? 'Everyone on the team sees the company library. Only administrators can change it.' : 'Shared by your company. You can pin these to Favorites or copy one to My library to make your own version.'}</div>` : `<div class="note">Only you see your library. Pin any template with ☆ to keep it at the top of the “/” list.</div>`}
+        <table><thead><tr><th style="width:28px"></th><th>Template</th><th>Shortcut</th><th>Category</th><th>Asks for</th><th>Used</th><th></th></tr></thead><tbody>
+        ${list.length ? list.map(t => `<tr><td><button class="star ${isFav(t.id) ? 'on' : ''}" data-fav="${t.id}">${isFav(t.id) ? '★' : '☆'}</button></td><td><b>${esc(t.title)}</b><div class="s">${previewHTML({ body: t.body.replace(/\n+/g, ' '), fields: t.fields }, null, null, { raw: true })}</div></td><td class="code">/${esc(t.code)}</td><td>${esc(t.cat)}</td><td class="small">${fieldsOf(t).map(f => esc(f.label)).join(', ') || '—'}</td><td>${t.uses || 0}</td>
+          <td class="acts">${canEdit ? `<button class="btn sm" data-act="edit" data-id="${t.id}" title="Edit">✎</button> <button class="btn sm" data-act="dup" data-id="${t.id}" title="Duplicate">⧉</button> <button class="btn sm danger" data-act="del" data-id="${t.id}" title="Delete">🗑</button>` : `<button class="btn sm" data-act="dup" data-id="${t.id}">Copy to Mine</button>`}</td></tr>`).join('')
+          : `<tr><td colspan="7" class="empty">No templates here yet.${canEdit ? ' Click “+ New template”.' : ''}</td></tr>`}
+        </tbody></table>
+      </div>
+    </div></main>`;
+}
+
+/* ---------- template editor ---------- */
+function editorView() {
+  const e = S.set.ed, c = convo();
+  const scopes = isAdmin() ? [['company', 'Company library'], [S.user, 'My library']] : [[S.user, 'My library']];
+  const fs = askKeys(e.body).map(k => e.fields.find(f => f.key === k) || { key: k, label: human(k), type: 'text' });
+  const groups = [...new Set(AUTO.map(a => a.g))];
+  const fake = { body: e.body, fields: e.fields };
+  return `<div class="scrim" id="modal"><div class="modal" role="dialog" aria-label="Edit template">
+    <div class="mhead"><h2>${e.id ? 'Edit template' : 'New template'}</h2><span class="sp"></span><button class="btn sm" data-act="edcancel">Cancel</button><button class="btn sm pri" data-act="edsave">Save</button></div>
+    <div class="editor">
+      <div class="eform">
+        <div class="frow"><div class="f"><label for="edTitle">Title</label><input id="edTitle" data-ed="title" value="${esc(e.title)}" placeholder="e.g. Shipping date" autocomplete="off">${e.err && e.err.title ? `<div class="err">${e.err.title}</div>` : ''}</div>
+          <div class="f"><label for="edCode">Shortcut</label><input id="edCode" data-ed="code" value="${esc(e.code)}" placeholder="ship" autocomplete="off">${e.err && e.err.code ? `<div class="err">${e.err.code}</div>` : ''}</div></div>
+        <div class="frow3"><div class="f"><label for="edScope">Library</label><select id="edScope" data-ed="scope">${scopes.map(([v, l]) => `<option value="${v}" ${e.scope === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+          <div class="f"><label for="edCat">Category</label><select id="edCat" data-ed="cat">${catsOf(e.scope).map(k => `<option ${e.cat === k ? 'selected' : ''}>${esc(k)}</option>`).join('')}<option value="__new">+ New category…</option></select></div></div>
+        <div class="f"><label for="edBody">Message</label>
+          <div class="vbar"><button class="btn sm" data-act="vmenu">＋ Insert variable ▾</button><button class="btn sm" data-act="addfield">＋ Ask the agent…</button><span class="small" style="align-self:center">Fallback: <code>{{contact.first_name | default: "there"}}</code></span>
+            ${e.vmenu ? `<div class="vmenu">${groups.map(g => `<div class="g">${g}</div>${AUTO.filter(a => a.g === g).map(a => `<button data-ins="${a.k}"><span>${esc(a.l)}</span><span>${esc(a.f(c) || '—')}</span></button>`).join('')}`).join('')}</div>` : ''}</div>
+          <textarea id="edBody" data-ed="body" placeholder="Hi {{contact.first_name}}, …">${esc(e.body)}</textarea>${e.err && e.err.body ? `<div class="err">${e.err.body}</div>` : ''}</div>
+        <div class="f"><label>Fields the agent fills in ${fs.length ? '' : '<span class="small" style="font-weight:400">— none yet. Any {{name}} that isn’t a system variable becomes a field here.</span>'}</label>
+          ${fs.length ? `<div class="fields"><div class="fr h"><span>Variable</span><span>Label</span><span>Type</span><span>Options / default</span><span>Required</span></div>
+            ${fs.map((f, i) => `<div class="fr"><code>{{${esc(f.key)}}}</code><input data-fi="${i}" data-fp="label" value="${esc(f.label)}"><select data-fi="${i}" data-fp="type">${Object.entries(FIELD_TYPES).map(([v, l]) => `<option value="${v}" ${f.type === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+              ${f.type === 'select' ? `<input data-fi="${i}" data-fp="options" value="${esc((f.options || []).join(', '))}" placeholder="Option A, Option B">` : `<input data-fi="${i}" data-fp="def" value="${esc(f.def || '')}" placeholder="Default (optional)">`}
+              <label style="display:flex;gap:4px;align-items:center"><input type="checkbox" style="width:auto" data-fi="${i}" data-fp="required" ${f.required ? 'checked' : ''}>Yes</label></div>`).join('')}</div>` : ''}
+        </div>
+      </div>
+      <div class="eprev"><div class="small" style="margin-bottom:6px;font-weight:600">PREVIEW — with ${esc(c.contact.name)}’s conversation</div>
+        <div class="tpl-body" style="background:#fff">${previewHTML(fake, c, initVals(fake, c))}</div>
+        <div class="small" style="margin-top:10px"><span class="v auto">green</span> filled automatically · <span class="v ask">yellow</span> the agent fills it in · <span class="v miss">red</span> no value for this customer (add a fallback)</div>
+        <div class="small" style="margin-top:14px;font-weight:600">VARIABLES IN THIS TEMPLATE</div>
+        <div class="tpl-body" style="background:#fff;margin-top:6px">${previewHTML(fake, null, null, { raw: true })}</div>
+      </div>
+    </div></div></div>`;
+}
+const guessType = k => /date|day_of|deadline|due_by/.test(k) ? 'date' : /amount|price|refund|total|fee|cost|due$/.test(k) ? 'money' : /days|hours|qty|count|number_of/.test(k) ? 'number' : /note|message|details/.test(k) ? 'long' : 'text';
+function syncEdFields() { const e = S.set.ed; askKeys(e.body).forEach(k => { if (!e.fields.find(f => f.key === k)) e.fields.push({ key: k, label: human(k), type: guessType(k) }); }); }
+
+/* ---------- picker control ---------- */
+function slashAt(ta) {
+  const pos = ta.selectionStart, before = ta.value.slice(0, pos), m = before.match(/(^|\s)\/([^\s\/]*)$/);
+  return m ? { start: pos - m[2].length - 1, end: pos, q: m[2] } : null;
+}
+function updatePicker(ta) {
+  const s = slashAt(ta);
+  if (!s) { if (S.pk && !S.pk.fill) { S.pk = null; render(); } return; }
+  const was = S.pk;
+  S.pk = Object.assign({ tab: 'all', cat: '', idx: 0 }, was && !was.fill ? was : {}, { start: s.start, end: s.end, q: s.q, fill: null });
+  if (!was || was.q !== s.q) S.pk.idx = 0;
+  if (!was && !s.q && favs().length) S.pk.tab = 'fav';
+  if (s.q && (S.pk.tab === 'fav' || S.pk.tab === 'recent') && !pickerItems().length) S.pk.tab = 'all';
+  render();
+}
+function pickTpl(id) {
+  const t = tpl(id), c = convo();
+  if (!fieldsOf(t).length) { insertText(resolve(t, c, {}), S.pk.start, S.pk.end); markUsed(id); S.pk = null; render(); focusEditorEnd(); return; }
+  S.pk.fill = id; S.pk.vals = initVals(t, c); S.pk.bad = null; render();
+  const first = document.getElementById('pkf0'); if (first) first.focus();
+}
+let caretAfter = null;
+function insertText(text, start, end) {
+  const c = convo(), cur = S.draft[c.id] || '';
+  const s = start == null ? cur.length : start, e = end == null ? cur.length : end;
+  const pre = cur.slice(0, s), sep = start == null && pre && !/\s$/.test(pre) ? '\n' : '';
+  S.draft[c.id] = pre + sep + text + cur.slice(e);
+  caretAfter = (pre + sep + text).length;
+}
+function focusEditorEnd() { const ta = document.getElementById('editor'); if (ta) { ta.focus(); const p = caretAfter != null ? caretAfter : ta.value.length; ta.setSelectionRange(p, p); caretAfter = null; } }
+function pkInsert() {
+  const p = S.pk, t = tpl(p.fill), miss = missing(t, p.vals);
+  if (miss.length) { p.bad = miss; render(); const i = fieldsOf(t).findIndex(f => f.key === miss[0]); const el = document.getElementById('pkf' + i); if (el) el.focus(); toast('Fill in the required fields first'); return; }
+  insertText(resolve(t, convo(), p.vals), p.start, p.end); markUsed(t.id); S.pk = null; render(); focusEditorEnd();
+}
+function openLib(q) {
+  const ed = document.getElementById('editor');
+  let range = null;
+  if (S.pk && !S.pk.fill) range = { start: S.pk.start, end: S.pk.end };
+  S.pk = null;
+  S.lib = { node: q ? 'all' : (favs().length ? 'fav' : 'all'), q: q || '', sort: 'default', sel: null, vals: {}, bad: null, range };
+  render(); const el = document.getElementById('libq'); if (el) el.focus();
+}
+function libInsert() {
+  const L = S.lib, t = tpl(L.sel); if (!t) return;
+  const miss = missing(t, L.vals);
+  if (miss.length) { L.bad = miss; render(); toast('Fill in the required fields first'); return; }
+  insertText(resolve(t, convo(), L.vals), L.range ? L.range.start : null, L.range ? L.range.end : null);
+  markUsed(t.id); S.lib = null; S.view = 'chat'; render(); focusEditorEnd(); toast('Inserted “' + t.title + '”');
+}
+function selectLib(id) { const L = S.lib; L.sel = id; L.vals = initVals(tpl(id), convo()); L.bad = null; render(); }
+
+/* ---------- editor control ---------- */
+function openEditor(id, dupe) {
+  const t = id ? tpl(id) : null;
+  let scope = S.view === 'settings' ? (S.set.tab === 'company' && isAdmin() ? 'company' : S.user) : S.user;
+  const e = t ? JSON.parse(JSON.stringify(t)) : { title: '', code: '', scope, cat: '', body: '', fields: [] };
+  if (dupe) { delete e.id; e.scope = S.user; e.title = t.title + (t.scope === 'company' ? '' : ' (copy)'); e.code = t.code + '2'; e.uses = 0; delete e.lastUsed; }
+  if (!e.cat || !catsOf(e.scope).includes(e.cat)) { if (!catsOf(e.scope).length) catsOf(e.scope).push('Uncategorized'); if (dupe && e.cat && !catsOf(e.scope).includes(e.cat)) catsOf(e.scope).push(e.cat); else e.cat = catsOf(e.scope).includes(e.cat) ? e.cat : catsOf(e.scope)[0]; }
+  e.fields = e.fields || []; S.set.ed = e; S.lib = null; render();
+  const el = document.getElementById('edTitle'); if (el) el.focus();
+}
+function saveEditor() {
+  const e = S.set.ed, err = {};
+  e.code = String(e.code || '').trim().replace(/^\//, '').replace(/\s+/g, '-').toLowerCase();
+  if (!e.title.trim()) err.title = 'Give it a title.';
+  if (!e.code) err.code = 'Add a shortcut.';
+  else if (visible().some(t => t.id !== e.id && t.code === e.code && (t.scope === e.scope || t.scope === 'company' || e.scope === 'company'))) err.code = '/' + e.code + ' is already used.';
+  if (!e.body.trim()) err.body = 'Write the message.';
+  if (Object.keys(err).length) { e.err = err; render(); return; }
+  const keys = askKeys(e.body); e.fields = e.fields.filter(f => keys.includes(f.key)); delete e.err; delete e.vmenu;
+  if (e.id) Object.assign(tpl(e.id), e); else { e.id = 't' + Date.now(); e.uses = 0; DB.templates.push(e); }
+  save(); S.set.ed = null; render(); toast('Saved “' + e.title + '”');
+}
+
+/* ---------- events ---------- */
+document.addEventListener('input', ev => {
+  const x = ev.target;
+  if (x.id === 'editor') { S.draft[S.convo] = x.value; updatePicker(x); return; }
+  if (x.dataset.fk && S.pk && S.pk.fill) { S.pk.vals[x.dataset.fk] = x.value; if (S.pk.bad) S.pk.bad = S.pk.bad.filter(k => k !== x.dataset.fk); refreshPreview('#picker .preview', tpl(S.pk.fill), S.pk.vals); return; }
+  if (x.dataset.fk && S.lib) { S.lib.vals[x.dataset.fk] = x.value; refreshPreview('.mdetail .tpl-body', tpl(S.lib.sel), S.lib.vals); return; }
+  if (x.id === 'libq') { S.lib.q = x.value; S.lib.sel = null; render(); return; }
+  if (x.dataset.ed && S.set.ed) { const e = S.set.ed; if (x.dataset.ed === 'cat' && x.value === '__new') return; e[x.dataset.ed] = x.value; if (x.dataset.ed === 'body') syncEdFields(); if (e.err) delete e.err[x.dataset.ed]; if (x.dataset.ed !== 'title' && x.dataset.ed !== 'code') render(); return; }
+  if (x.dataset.fi && S.set.ed) { editField(x); return; }
+});
+function refreshPreview(sel, t, vals) { const el = document.querySelector(sel); if (el) el.innerHTML = previewHTML(t, convo(), vals); }
+function editField(x) {
+  const e = S.set.ed, key = askKeys(e.body)[+x.dataset.fi]; let f = e.fields.find(y => y.key === key);
+  if (!f) { f = { key, label: human(key), type: 'text' }; e.fields.push(f); }
+  const p = x.dataset.fp;
+  if (p === 'required') f.required = x.checked; else if (p === 'options') f.options = x.value.split(',').map(s => s.trim()).filter(Boolean); else f[p] = x.value;
+  if (p === 'type') render(); else { const pv = document.querySelector('.eprev .tpl-body'); if (pv) pv.innerHTML = previewHTML({ body: e.body, fields: e.fields }, convo(), initVals({ body: e.body, fields: e.fields }, convo())); }
+}
+document.addEventListener('change', ev => {
+  const x = ev.target;
+  if (x.id === 'whoSel') { S.user = x.value; S.pk = null; if (S.lib) S.lib.sel = null; render(); toast('Now signed in as ' + me().name + ' (' + me().role + ')'); return; }
+  if (x.id === 'libsort') { S.lib.sort = x.value; render(); return; }
+  if (x.dataset.fk && S.pk && S.pk.fill && x.tagName === 'SELECT') { S.pk.vals[x.dataset.fk] = x.value; refreshPreview('#picker .preview', tpl(S.pk.fill), S.pk.vals); return; }
+  if (x.dataset.fk && S.lib && x.tagName === 'SELECT') { S.lib.vals[x.dataset.fk] = x.value; refreshPreview('.mdetail .tpl-body', tpl(S.lib.sel), S.lib.vals); return; }
+  if (x.dataset.ed === 'scope' && S.set.ed) { const e = S.set.ed; e.scope = x.value; if (!catsOf(e.scope).length) catsOf(e.scope).push('Uncategorized'); if (!catsOf(e.scope).includes(e.cat)) e.cat = catsOf(e.scope)[0]; render(); return; }
+  if (x.dataset.ed === 'cat' && x.value === '__new') { const n = (prompt('New category name') || '').trim(); const e = S.set.ed; if (n) { if (!catsOf(e.scope).includes(n)) catsOf(e.scope).push(n); e.cat = n; save(); } render(); return; }
+  if (x.dataset.fi && S.set.ed && x.type === 'checkbox') editField(x);
+});
+document.addEventListener('keydown', ev => {
+  const k = ev.key, x = ev.target;
+  if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === 'k') { ev.preventDefault(); if (S.view !== 'chat') { S.view = 'chat'; } if (S.lib) { S.lib = null; render(); focusEditorEnd(); } else openLib(S.pk && !S.pk.fill ? S.pk.q : ''); return; }
+  if (S.set.ed) { if (k === 'Escape') { if (S.set.ed.vmenu) S.set.ed.vmenu = false; else S.set.ed = null; render(); } else if ((ev.ctrlKey || ev.metaKey) && k === 'Enter') { ev.preventDefault(); saveEditor(); } return; }
+  if (S.lib) {
+    if (k === 'Escape') { ev.preventDefault(); S.lib = null; render(); focusEditorEnd(); return; }
+    if ((ev.ctrlKey || ev.metaKey) && k === 'Enter') { ev.preventDefault(); libInsert(); return; }
+    if (x.id === 'libq' && (k === 'ArrowDown' || k === 'ArrowUp')) { ev.preventDefault(); const it = libItems(), i = it.findIndex(t => t.id === S.lib.sel), n = Math.max(0, Math.min(it.length - 1, i + (k === 'ArrowDown' ? 1 : -1))); if (it[n]) selectLib(it[n].id); return; }
+    if (x.id === 'libq' && k === 'Enter') { ev.preventDefault(); const t = tpl(S.lib.sel); if (!t) return; if (fieldsOf(t).length) { const f = document.getElementById('lbf0'); if (f) f.focus(); } else libInsert(); return; }
+    return;
+  }
+  if (S.pk && S.pk.fill) {
+    if (k === 'Escape') { ev.preventDefault(); S.pk.fill = null; render(); focusPickerEditor(); return; }
+    if ((ev.ctrlKey || ev.metaKey) && k === 'Enter' || (k === 'Enter' && x.dataset.fk && x.tagName !== 'TEXTAREA' && isLastField(x))) { ev.preventDefault(); pkInsert(); return; }
+    return;
+  }
+  if (S.pk && x.id === 'editor') {
+    const items = pickerItems(), tabs = ['fav', 'recent', 'mine', 'company', 'all'];
+    if (k === 'ArrowDown') { ev.preventDefault(); S.pk.idx = Math.min(items.length - 1, S.pk.idx + 1); render(); return; }
+    if (k === 'ArrowUp') { ev.preventDefault(); S.pk.idx = Math.max(0, S.pk.idx - 1); render(); return; }
+    if ((k === 'ArrowRight' || k === 'ArrowLeft') && ev.altKey === false && x.selectionStart === S.pk.end) { ev.preventDefault(); const i = tabs.indexOf(S.pk.tab); S.pk.tab = tabs[(i + (k === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; S.pk.cat = ''; S.pk.idx = 0; render(); return; }
+    if (k === 'Enter' || k === 'Tab') { if (items[S.pk.idx]) { ev.preventDefault(); pickTpl(items[S.pk.idx].id); } return; }
+    if (k === 'Escape') { ev.preventDefault(); S.pk = null; render(); focusEditorEnd(); return; }
+  }
+  if (x.id === 'editor' && k === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); send(); }
+});
+function isLastField(x) { const all = [...document.querySelectorAll('#picker [data-fk]')]; return all[all.length - 1] === x; }
+function focusPickerEditor() { const ta = document.getElementById('editor'); if (ta && S.pk) { ta.focus(); ta.setSelectionRange(S.pk.end, S.pk.end); } }
+function send() {
+  const c = convo(), t = (S.draft[c.id] || '').trim(); if (!t) return;
+  const d = new Date(); c.msgs.push({ in: 0, t, at: pad(d.getHours()) + ':' + pad(d.getMinutes()), by: me().name }); S.draft[c.id] = ''; S.pk = null; render();
+  const m = document.getElementById('msgs'); if (m) m.scrollTop = m.scrollHeight; focusEditorEnd();
+}
+document.addEventListener('mousedown', ev => { if (ev.target.closest('.prow,.ptab,.chip,.star,[data-act=openlib]') && document.activeElement && document.activeElement.id === 'editor') ev.preventDefault(); });
+document.addEventListener('click', ev => {
+  const el = ev.target instanceof Element ? ev.target : null; if (!el) return;
+  const b = el.closest('[data-dq],[data-act],[data-go],[data-convo],[data-pktab],[data-pkcat],[data-pkpick],[data-fav],[data-node],[data-lsel],[data-stab],[data-scat],[data-catren],[data-catdel],[data-catup],[data-ins]');
+  if (!b) { if (S.pk && !S.pk.fill && !el.closest('.composer')) { S.pk = null; render(); } if (S.set.ed && S.set.ed.vmenu && !el.closest('.vbar')) { S.set.ed.vmenu = false; render(); } return; }
+  const d = b.dataset;
+  if (d.dq) { const st = S.pk && S.pk.fill ? S.pk : S.lib; if (!st) return; st.vals[d.dq] = d.dv; if (st.bad) st.bad = st.bad.filter(k => k !== d.dq); render(); return; }
+  if (d.fav) { ev.stopPropagation(); toggleFav(d.fav); render(); toast(isFav(d.fav) ? 'Pinned to Favorites' : 'Removed from Favorites'); if (S.view === 'chat' && S.pk) focusPickerEditor(); return; }
+  if (d.go) { S.view = d.go; S.pk = null; render(); return; }
+  if (d.convo) { S.convo = +d.convo; S.pk = null; render(); return; }
+  if (d.pktab) { S.pk.tab = d.pktab; S.pk.cat = ''; S.pk.idx = 0; render(); focusPickerEditor(); return; }
+  if (d.pkcat !== undefined) { S.pk.cat = d.pkcat; S.pk.idx = 0; render(); focusPickerEditor(); return; }
+  if (d.pkpick) { pickTpl(d.pkpick); return; }
+  if (d.node) { S.lib.node = d.node; S.lib.sel = null; S.lib.sort = 'default'; render(); return; }
+  if (d.lsel) { selectLib(d.lsel); return; }
+  if (d.stab) { S.set.tab = d.stab; S.set.cat = ''; render(); return; }
+  if (d.scat !== undefined) { S.set.cat = d.scat; render(); return; }
+  if (d.catup !== undefined) { const sc = S.set.tab === 'company' ? 'company' : S.user, a = catsOf(sc), i = +d.catup; if (i > 0) { [a[i - 1], a[i]] = [a[i], a[i - 1]]; save(); render(); } return; }
+  if (d.catren) { const sc = S.set.tab === 'company' ? 'company' : S.user, n = (prompt('Rename category', d.catren) || '').trim(); if (!n || n === d.catren) return; const a = catsOf(sc); a[a.indexOf(d.catren)] = n; DB.templates.forEach(t => { if (t.scope === sc && t.cat === d.catren) t.cat = n; }); if (S.set.cat === d.catren) S.set.cat = n; save(); render(); return; }
+  if (d.catdel) { const sc = S.set.tab === 'company' ? 'company' : S.user, a = catsOf(sc), n = DB.templates.filter(t => t.scope === sc && t.cat === d.catdel).length; if (!confirm(n ? `Delete “${d.catdel}”? Its ${n} template(s) move to “Uncategorized”.` : `Delete “${d.catdel}”?`)) return; a.splice(a.indexOf(d.catdel), 1); if (n) { if (!a.includes('Uncategorized')) a.push('Uncategorized'); DB.templates.forEach(t => { if (t.scope === sc && t.cat === d.catdel) t.cat = 'Uncategorized'; }); } S.set.cat = ''; save(); render(); return; }
+  if (d.ins) { const e = S.set.ed, ta = document.getElementById('edBody'), p = ta ? ta.selectionStart : e.body.length, s = '{{' + d.ins + '}}'; e.body = e.body.slice(0, p) + s + e.body.slice(ta ? ta.selectionEnd : p); e.vmenu = false; render(); const t2 = document.getElementById('edBody'); if (t2) { t2.focus(); t2.setSelectionRange(p + s.length, p + s.length); } return; }
+  switch (d.act) {
+    case 'send': send(); break;
+    case 'openlib': openLib(S.pk && !S.pk.fill ? S.pk.q : ''); break;
+    case 'closelib': if (el === b || el.closest('.mhead')) { S.lib = null; render(); focusEditorEnd(); } break;
+    case 'libinsert': libInsert(); break;
+    case 'pkback': S.pk.fill = null; render(); focusPickerEditor(); break;
+    case 'pkinsert': pkInsert(); break;
+    case 'newtpl': openEditor(null); break;
+    case 'edit': openEditor(d.id); break;
+    case 'dup': openEditor(d.id, true); break;
+    case 'del': { const t = tpl(d.id); if (confirm(`Delete “${t.title}”?`)) { DB.templates = DB.templates.filter(x => x.id !== d.id); Object.values(DB.fav).forEach(a => { const i = a.indexOf(d.id); if (i >= 0) a.splice(i, 1); }); Object.values(DB.recent).forEach(a => { const i = a.indexOf(d.id); if (i >= 0) a.splice(i, 1); }); save(); render(); toast('Deleted'); } break; }
+    case 'newcat': { const sc = S.set.tab === 'company' ? 'company' : S.user, n = (prompt('New category name') || '').trim(); if (n && !catsOf(sc).includes(n)) { catsOf(sc).push(n); save(); render(); } break; }
+    case 'edcancel': S.set.ed = null; render(); break;
+    case 'edsave': saveEditor(); break;
+    case 'vmenu': S.set.ed.vmenu = !S.set.ed.vmenu; render(); break;
+    case 'addfield': { const n = (prompt('What should the agent fill in? (e.g. Refund amount)') || '').trim(); if (!n) break; const e = S.set.ed, key = n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'field'; const ta = document.getElementById('edBody'), p = ta ? ta.selectionStart : e.body.length, s = '{{' + key + '}}'; e.body = e.body.slice(0, p) + s + e.body.slice(p); if (!e.fields.find(f => f.key === key)) e.fields.push({ key, label: n, type: 'text', required: true }); render(); break; }
+    case 'reset': if (confirm('Reset all templates, favorites and categories to the demo data?')) { DB = JSON.parse(JSON.stringify(SEED)); save(); S.pk = S.lib = null; S.set.ed = null; render(); toast('Reset'); } break;
+  }
+});
+/* drag to reorder favorites */
+let dragId = null;
+document.addEventListener('dragstart', ev => { const r = ev.target.closest && ev.target.closest('[data-drag]'); if (r) { dragId = r.dataset.drag; ev.dataTransfer.effectAllowed = 'move'; } });
+document.addEventListener('dragover', ev => { const r = ev.target.closest && ev.target.closest('[data-drag]'); if (r && dragId) { ev.preventDefault(); document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over')); r.classList.add('drag-over'); } });
+document.addEventListener('drop', ev => { const r = ev.target.closest && ev.target.closest('[data-drag]'); if (!r || !dragId) return; ev.preventDefault(); const f = favs(), from = f.indexOf(dragId), to = f.indexOf(r.dataset.drag); if (from >= 0 && to >= 0 && from !== to) { f.splice(from, 1); f.splice(to, 0, dragId); save(); } dragId = null; render(); });
+document.addEventListener('dragend', () => { dragId = null; document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over')); });
+
+render();
+</script>
+</body>
+</html>
