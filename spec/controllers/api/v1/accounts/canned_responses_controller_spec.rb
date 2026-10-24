@@ -299,24 +299,24 @@ RSpec.describe 'Canned Responses API', type: :request do
 
     it 'explains when AI is not configured' do
       allow(ReplyTemplates::DraftGeneratorService).to receive(:new)
-        .and_raise(ReplyTemplates::DraftGeneratorService::NotConfiguredError, 'ANTHROPIC_API_KEY is not set')
+        .and_raise(ReplyTemplates::DraftGeneratorService::NotConfiguredError, 'DEEPSEEK_API_KEY is not set')
 
       post "#{base_url}/#{template.id}/generate", params: { conversation_id: conversation.display_id },
                                                   headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.parsed_body['error']).to include('ANTHROPIC_API_KEY')
+      expect(response.parsed_body['error']).to include('DEEPSEEK_API_KEY')
     end
 
     it 'reports a failed generation as a bad gateway' do
-      allow(generator).to receive(:perform).and_raise(ReplyTemplates::DraftGeneratorService::GenerationError, 'Claude declined')
+      allow(generator).to receive(:perform).and_raise(ReplyTemplates::DraftGeneratorService::GenerationError, 'DeepSeek declined')
       allow(ReplyTemplates::DraftGeneratorService).to receive(:new).and_return(generator)
 
       post "#{base_url}/#{template.id}/generate", params: { conversation_id: conversation.display_id },
                                                   headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:bad_gateway)
-      expect(response.parsed_body['error']).to eq('Claude declined')
+      expect(response.parsed_body['error']).to eq('DeepSeek declined')
     end
   end
 

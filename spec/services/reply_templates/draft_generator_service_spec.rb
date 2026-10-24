@@ -6,14 +6,13 @@ RSpec.describe ReplyTemplates::DraftGeneratorService do
   let(:contact) { create(:contact, account: account, name: 'Emily Zhang') }
   let(:inbox) { create(:inbox, account: account) }
   let(:conversation) { create(:conversation, account: account, inbox: inbox, contact: contact) }
-  let(:messages_url) { 'https://api.anthropic.com/v1/messages' }
+  let(:completions_url) { 'https://api.deepseek.com/v1/chat/completions' }
 
-  let(:claude_reply) do
+  let(:deepseek_reply) do
     {
-      id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5',
-      content: [{ type: 'text', text: 'Hi Emily, your Agave ships Monday.' }],
-      stop_reason: 'end_turn', stop_sequence: nil,
-      usage: { input_tokens: 120, output_tokens: 12 }
+      id: 'chatcmpl-1', object: 'chat.completion', model: 'deepseek-chat',
+      choices: [{ index: 0, message: { role: 'assistant', content: 'Hi Emily, your Agave ships Monday.' }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 120, completion_tokens: 12, total_tokens: 132 }
     }
   end
 
@@ -28,24 +27,30 @@ RSpec.describe ReplyTemplates::DraftGeneratorService do
     described_class.new(conversation: conversation, user: agent, instructions: 'Tell them it ships Monday. Be warm.')
   end
 
-  context 'with an API key' do
-    around { |example| with_modified_env(ANTHROPIC_API_KEY: 'test-key') { example.run } }
+  def stub_deepseek(body, status: 200)
+    stub_request(:post, completions_url).to_return(status: status, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+  end
 
-    it 'returns the draft text from Claude' do
-      stub_request(:post, messages_url).to_return(status: 200, body: claude_reply.to_json, headers: { 'Content-Type' => 'application/json' })
+  context 'with an API key' do
+    around { |example| with_modified_env(DEEPSEEK_API_KEY: 'test-key') { example.run } }
+
+    it 'returns the draft text from DeepSeek' do
+      stub_deepseek(deepseek_reply)
 
       expect(service.perform).to eq('Hi Emily, your Agave ships Monday.')
     end
 
     it 'sends the template instructions and the public transcript, not private notes' do
-      stub_request(:post, messages_url).to_return(status: 200, body: claude_reply.to_json, headers: { 'Content-Type' => 'application/json' })
+      stub_deepseek(deepseek_reply)
 
       service.perform
 
-      expect(WebMock).to(have_requested(:post, messages_url).with do |request|
+      expect(WebMock).to(have_requested(:post, completions_url).with do |request|
         body = JSON.parse(request.body)
-        prompt = body['messages'].first['content'].to_s
-        body['model'] == 'claude-opus-5-5' &&
+        prompt = body['messages'].last['content'].to_s
+        body['model'] == 'deepseek-chat' &&
+          body['messages'].first['role'] == 'system' &&
+          request.headers['Authorization'] == 'Bearer test-key' &&
           prompt.include?('Tell them it ships Monday. Be warm.') &&
           prompt.include?('When will my Agave ship?') &&
           prompt.include?('Emily Zhang') &&
@@ -53,23 +58,22 @@ RSpec.describe ReplyTemplates::DraftGeneratorService do
       end)
     end
 
-    it 'raises a generation error when Claude declines' do
-      refused = claude_reply.merge(content: [], stop_reason: 'refusal')
-      stub_request(:post, messages_url).to_return(status: 200, body: refused.to_json, headers: { 'Content-Type' => 'application/json' })
+    it 'raises a generation error when the reply is filtered' do
+      filtered = deepseek_reply.merge(choices: [{ index: 0, message: { role: 'assistant', content: '' }, finish_reason: 'content_filter' }])
+      stub_deepseek(filtered)
 
       expect { service.perform }.to raise_error(ReplyTemplates::DraftGeneratorService::GenerationError)
     end
 
     it 'raises a generation error when the API fails' do
-      error = { type: 'error', error: { type: 'invalid_request_error', message: 'bad' } }
-      stub_request(:post, messages_url).to_return(status: 400, body: error.to_json, headers: { 'Content-Type' => 'application/json' })
+      stub_deepseek({ error: { message: 'Insufficient Balance', type: 'unknown_error' } }, status: 402)
 
       expect { service.perform }.to raise_error(ReplyTemplates::DraftGeneratorService::GenerationError)
     end
   end
 
   it 'raises a not-configured error without an API key' do
-    with_modified_env(ANTHROPIC_API_KEY: nil) do
+    with_modified_env(DEEPSEEK_API_KEY: nil) do
       expect { service.perform }.to raise_error(ReplyTemplates::DraftGeneratorService::NotConfiguredError)
     end
   end

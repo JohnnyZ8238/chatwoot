@@ -1,10 +1,11 @@
-# Drafts a reply with Claude: an AI prompt template gives the instructions, the conversation gives the context.
-# The agent reviews and edits the draft before sending it.
+# Drafts a reply with DeepSeek: an AI prompt template gives the instructions, the conversation gives the context.
+# The agent reviews and edits the draft before sending it. DeepSeek speaks the OpenAI API, so the ruby-openai client is used.
 class ReplyTemplates::DraftGeneratorService
   class NotConfiguredError < StandardError; end
   class GenerationError < StandardError; end
 
-  DEFAULT_MODEL = 'claude-opus-5-5'.freeze
+  DEFAULT_MODEL = 'deepseek-chat'.freeze
+  DEFAULT_BASE_URL = 'https://api.deepseek.com/'.freeze
   TRANSCRIPT_LIMIT = 40
   REQUEST_TIMEOUT = 60
 
@@ -21,32 +22,40 @@ class ReplyTemplates::DraftGeneratorService
   end
 
   def perform
-    raise NotConfiguredError, 'AI drafts need ANTHROPIC_API_KEY set on the Chatwoot server' if api_key.blank?
+    raise NotConfiguredError, 'AI drafts need DEEPSEEK_API_KEY set on the Chatwoot server' if api_key.blank?
 
-    message = client.messages.create(
-      model: model,
-      max_tokens: 4096,
-      output_config: { effort: :low },
-      system_: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: prompt }],
-      request_options: { timeout: REQUEST_TIMEOUT }
+    response = client.chat(
+      parameters: {
+        model: model,
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: prompt }],
+        temperature: 0.7
+      }
     )
-    draft_from(message)
-  rescue Anthropic::Errors::APIError => e
-    raise GenerationError, "Claude could not draft this reply: #{e.message}"
+    draft_from(response)
+  rescue Faraday::Error => e
+    raise GenerationError, "DeepSeek could not draft this reply: #{api_error_message(e)}"
   end
 
   private
 
   attr_reader :conversation, :user, :instructions
 
-  def draft_from(message)
-    raise GenerationError, 'Claude declined to draft this reply' if message.stop_reason == :refusal
+  def draft_from(response)
+    choice = response.dig('choices', 0) || {}
+    raise GenerationError, 'DeepSeek declined to draft this reply' if choice['finish_reason'] == 'content_filter'
 
-    draft = message.content.select { |block| block.type == :text }.map(&:text).join.strip
-    raise GenerationError, 'Claude returned an empty draft' if draft.blank?
+    draft = choice.dig('message', 'content').to_s.strip
+    raise GenerationError, 'DeepSeek returned an empty draft' if draft.blank?
 
     draft
+  end
+
+  def api_error_message(error)
+    body = error.response&.dig(:body)
+    parsed = body.is_a?(String) ? JSON.parse(body) : body
+    parsed&.dig('error', 'message') || error.message
+  rescue JSON::ParserError
+    error.message
   end
 
   def prompt
@@ -86,11 +95,15 @@ class ReplyTemplates::DraftGeneratorService
   end
 
   def client
-    Anthropic::Client.new(api_key: api_key)
+    OpenAI::Client.new(access_token: api_key, uri_base: base_url, request_timeout: REQUEST_TIMEOUT)
   end
 
   def api_key
-    ENV.fetch('ANTHROPIC_API_KEY', nil)
+    ENV.fetch('DEEPSEEK_API_KEY', nil)
+  end
+
+  def base_url
+    ENV.fetch('DEEPSEEK_BASE_URL', DEFAULT_BASE_URL)
   end
 
   def model
