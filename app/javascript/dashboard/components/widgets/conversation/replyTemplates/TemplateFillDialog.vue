@@ -29,7 +29,9 @@ const fields = computed(() =>
 );
 const values = ref(initialFieldValues(fields.value));
 
-const missing = computed(() => missingRequiredFields(fields.value, values.value));
+const missing = computed(() =>
+  missingRequiredFields(fields.value, values.value)
+);
 
 const resolved = computed(() =>
   resolveTemplate(props.template.content, {

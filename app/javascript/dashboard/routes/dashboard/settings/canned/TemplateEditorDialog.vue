@@ -118,7 +118,10 @@ const variableGroups = computed(() => {
   return [
     {
       title: t('REPLY_TEMPLATES.EDITOR.GROUPS.CONTACT'),
-      items: [...standard('contact'), ...custom('contact_attribute', 'contact')],
+      items: [
+        ...standard('contact'),
+        ...custom('contact_attribute', 'contact'),
+      ],
     },
     {
       title: t('REPLY_TEMPLATES.EDITOR.GROUPS.CONVERSATION'),

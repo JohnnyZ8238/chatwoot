@@ -73,7 +73,8 @@ const nodePool = computed(() => {
 const SORTERS = {
   used: (a, b) => (b.usage_count || 0) - (a.usage_count || 0),
   recent: (a, b) => (b.last_used_at || '').localeCompare(a.last_used_at || ''),
-  az: (a, b) => (a.title || a.short_code).localeCompare(b.title || b.short_code),
+  az: (a, b) =>
+    (a.title || a.short_code).localeCompare(b.title || b.short_code),
 };
 
 const rows = computed(() => {
@@ -93,7 +94,9 @@ const rows = computed(() => {
 
 const canDrag = computed(
   () =>
-    node.value === 'favorites' && !search.value.trim() && sort.value === 'default'
+    node.value === 'favorites' &&
+    !search.value.trim() &&
+    sort.value === 'default'
 );
 
 const selected = computed(
@@ -120,7 +123,9 @@ watch(
   { immediate: true }
 );
 
-const missing = computed(() => missingRequiredFields(fields.value, values.value));
+const missing = computed(() =>
+  missingRequiredFields(fields.value, values.value)
+);
 
 const resolved = computed(() =>
   selected.value
@@ -216,7 +221,8 @@ const selectNode = id => {
 
 const moveSelection = step => {
   const index = rows.value.findIndex(row => row.id === selected.value?.id);
-  const next = rows.value[Math.min(rows.value.length - 1, Math.max(0, index + step))];
+  const next =
+    rows.value[Math.min(rows.value.length - 1, Math.max(0, index + step))];
   if (next) selectedId.value = next.id;
 };
 
@@ -268,7 +274,9 @@ const onDrop = targetId => {
   const from = dragId.value;
   dragId.value = null;
   if (!canDrag.value || !from || from === targetId) return;
-  const ids = favorites.value.map(template => template.id).filter(id => id !== from);
+  const ids = favorites.value
+    .map(template => template.id)
+    .filter(id => id !== from);
   ids.splice(ids.indexOf(targetId), 0, from);
   store.dispatch('reorderCannedResponseFavorites', ids);
 };
@@ -290,10 +298,10 @@ onMounted(() => {
     @close="emit('close')"
     @confirm="insert"
   >
-    <div
-      class="flex h-[32rem] overflow-hidden border rounded-xl border-n-weak"
-    >
-      <nav class="flex-shrink-0 w-48 py-2 overflow-y-auto border-r border-n-weak">
+    <div class="flex h-[32rem] overflow-hidden border rounded-xl border-n-weak">
+      <nav
+        class="flex-shrink-0 w-48 py-2 overflow-y-auto border-r border-n-weak"
+      >
         <template v-for="(group, index) in tree" :key="index">
           <p
             v-if="group.heading"
@@ -401,7 +409,10 @@ onMounted(() => {
               </span>
             </div>
           </li>
-          <li v-if="!rows.length" class="px-3 py-6 text-sm text-center text-n-slate-11">
+          <li
+            v-if="!rows.length"
+            class="px-3 py-6 text-sm text-center text-n-slate-11"
+          >
             {{ t('REPLY_TEMPLATES.EMPTY.NONE') }}
           </li>
         </ul>
