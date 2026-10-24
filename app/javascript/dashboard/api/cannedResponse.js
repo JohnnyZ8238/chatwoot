@@ -20,6 +20,14 @@ class CannedResponse extends ApiClient {
     return axios.delete(`${this.url}/${id}/favorite`);
   }
 
+  // A draft from an AI prompt template for the agent to review before sending
+  generate(id, { conversationId, instructions }) {
+    return axios.post(`${this.url}/${id}/generate`, {
+      conversation_id: conversationId,
+      instructions,
+    });
+  }
+
   reorderFavorites(ids) {
     return axios.patch(`${this.url}/favorites`, { ids });
   }

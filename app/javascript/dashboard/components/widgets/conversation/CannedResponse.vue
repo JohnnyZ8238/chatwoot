@@ -168,7 +168,7 @@ const items = computed(() =>
     label: `/${record.short_code}`,
     title: highlightMatches(title),
     subtitle: highlightMatches(
-      `/${record.short_code} · ${categoryName(record.canned_response_category_id)} · ${buildSnippet(plainText)}`
+      `${record.ai_prompt ? `✨ ${t('REPLY_TEMPLATES.AI.BADGE')} · ` : ''}/${record.short_code} · ${categoryName(record.canned_response_category_id)} · ${buildSnippet(plainText)}`
     ),
   }))
 );
@@ -204,7 +204,7 @@ const onSelect = ({ record }) => {
     record.variables,
     templateVariables.value
   );
-  if (fields.length) {
+  if (fields.length || record.ai_prompt) {
     // computed when this picker opened, so dates and times are current
     emit('fill', record, templateVariables.value);
     return;

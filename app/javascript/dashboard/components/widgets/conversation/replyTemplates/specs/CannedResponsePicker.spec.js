@@ -100,7 +100,9 @@ const ids = wrapper =>
   wrapper.findAll('.item').map(item => +item.attributes('data-id'));
 
 describe('CannedResponse picker', () => {
-  beforeEach(() => toggleFavorite.mockClear());
+  beforeEach(() => {
+    toggleFavorite.mockClear();
+  });
 
   it('opens on Favorites in the saved order when the agent has favorites', () => {
     expect(ids(mountPicker())).toEqual([2, 1]);

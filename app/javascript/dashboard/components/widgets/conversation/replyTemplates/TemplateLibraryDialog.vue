@@ -15,6 +15,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import TemplateFieldInput from './TemplateFieldInput.vue';
+import AiDraftPanel from './AiDraftPanel.vue';
 
 const props = defineProps({
   variables: { type: Object, default: () => ({}) },
@@ -48,6 +49,7 @@ const sort = ref('default');
 const selectedId = ref(null);
 const values = ref({});
 const showMissing = ref(false);
+const aiDraft = ref('');
 const dragId = ref(null);
 
 const isCompany = template => template.scope !== 'personal';
@@ -120,6 +122,7 @@ watch(
   () => selected.value?.id,
   () => {
     values.value = initialFieldValues(fields.value);
+    aiDraft.value = '';
     showMissing.value = false;
   },
   { immediate: true }
@@ -261,7 +264,13 @@ const insert = () => {
     showMissing.value = true;
     return;
   }
-  emit('insert', resolved.value, selected.value);
+  // an AI prompt template inserts its draft; its own text is only instructions
+  if (selected.value.ai_prompt) {
+    if (!aiDraft.value.trim()) return;
+    emit('insert', aiDraft.value, selected.value);
+  } else {
+    emit('insert', resolved.value, selected.value);
+  }
   dialogRef.value?.close();
 };
 
@@ -503,11 +512,24 @@ onMounted(async () => {
           >
             {{ resolved }}
           </p>
+          <AiDraftPanel
+            v-if="selected.ai_prompt"
+            :key="selected.id"
+            v-model:draft="aiDraft"
+            class="mb-4"
+            :template-id="selected.id"
+            :instructions="resolved"
+            :conversation-id="variables['conversation.id']"
+          />
           <div class="flex items-center justify-end gap-2">
             <Button
               data-testid="library-insert"
               type="button"
-              :label="t('REPLY_TEMPLATES.LIBRARY.INSERT')"
+              :label="
+                selected.ai_prompt
+                  ? t('REPLY_TEMPLATES.AI.INSERT_DRAFT')
+                  : t('REPLY_TEMPLATES.LIBRARY.INSERT')
+              "
               @click="insert"
             />
           </div>

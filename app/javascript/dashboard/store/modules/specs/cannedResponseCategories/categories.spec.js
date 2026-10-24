@@ -13,7 +13,9 @@ const CATEGORIES = [
 ];
 
 describe('cannedResponseCategories', () => {
-  beforeEach(() => commit.mockClear());
+  beforeEach(() => {
+    commit.mockClear();
+  });
 
   it('splits and orders company and personal categories', () => {
     const state = { records: CATEGORIES };

@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import TemplateFieldInput from './TemplateFieldInput.vue';
+import AiDraftPanel from './AiDraftPanel.vue';
 import {
   getTemplateFields,
   initialFieldValues,
@@ -42,9 +43,17 @@ const resolved = computed(() =>
   })
 );
 
+// An AI prompt template's text is instructions: what goes into the reply is the draft
+const isAiPrompt = computed(() => Boolean(props.template.ai_prompt));
+const aiDraft = ref('');
+
+const canInsert = computed(
+  () => !missing.value.length && (!isAiPrompt.value || !!aiDraft.value.trim())
+);
+
 const onConfirm = () => {
-  if (missing.value.length) return;
-  emit('insert', resolved.value);
+  if (!canInsert.value) return;
+  emit('insert', isAiPrompt.value ? aiDraft.value : resolved.value);
   dialogRef.value?.close();
 };
 
@@ -68,8 +77,12 @@ onMounted(async () => {
     ref="dialogRef"
     :title="template.title || `/${template.short_code}`"
     :description="`/${template.short_code}`"
-    :confirm-button-label="t('REPLY_TEMPLATES.FILL.INSERT')"
-    :disable-confirm-button="missing.length > 0"
+    :confirm-button-label="
+      isAiPrompt
+        ? t('REPLY_TEMPLATES.AI.INSERT_DRAFT')
+        : t('REPLY_TEMPLATES.FILL.INSERT')
+    "
+    :disable-confirm-button="!canInsert"
     width="xl"
     @confirm="onConfirm"
     @close="emit('close')"
@@ -85,7 +98,11 @@ onMounted(async () => {
       </div>
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium text-n-slate-11">
-          {{ t('REPLY_TEMPLATES.FILL.PREVIEW') }}
+          {{
+            isAiPrompt
+              ? t('REPLY_TEMPLATES.AI.INSTRUCTIONS')
+              : t('REPLY_TEMPLATES.FILL.PREVIEW')
+          }}
         </span>
         <p
           data-testid="template-preview"
@@ -94,6 +111,14 @@ onMounted(async () => {
           {{ resolved }}
         </p>
       </div>
+      <AiDraftPanel
+        v-if="isAiPrompt"
+        v-model:draft="aiDraft"
+        :template-id="template.id"
+        :instructions="resolved"
+        :conversation-id="variables['conversation.id']"
+        :auto-generate="!fields.length"
+      />
     </div>
   </Dialog>
 </template>

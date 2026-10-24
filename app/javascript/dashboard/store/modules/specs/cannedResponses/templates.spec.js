@@ -60,7 +60,9 @@ describe('reply template getters', () => {
 });
 
 describe('reply template actions', () => {
-  beforeEach(() => commit.mockClear());
+  beforeEach(() => {
+    commit.mockClear();
+  });
 
   const stateWith = () => ({ records: RECORDS.map(r => ({ ...r })) });
 

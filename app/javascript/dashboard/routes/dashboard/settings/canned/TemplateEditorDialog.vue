@@ -54,6 +54,7 @@ const form = ref({
   category: source.canned_response_category_id
     ? String(source.canned_response_category_id)
     : '',
+  ai_prompt: Boolean(source.ai_prompt),
 });
 const definitions = ref((source.variables || []).map(field => ({ ...field })));
 const errors = ref({});
@@ -213,6 +214,7 @@ const save = async () => {
     canned_response_category_id: form.value.category
       ? Number(form.value.category)
       : null,
+    ai_prompt: form.value.ai_prompt,
     // only the fields the message still asks for
     variables: fields.value,
   };
@@ -336,6 +338,25 @@ onMounted(() => dialogRef.value?.open());
             </select>
           </label>
         </div>
+
+        <label
+          class="flex items-start gap-2 px-3 py-2 rounded-lg cursor-pointer bg-n-alpha-black2"
+        >
+          <input
+            v-model="form.ai_prompt"
+            data-testid="template-ai-prompt"
+            type="checkbox"
+            class="mt-0.5"
+          />
+          <span class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium text-n-slate-12">
+              {{ t('REPLY_TEMPLATES.AI.TOGGLE') }}
+            </span>
+            <span class="text-xs text-n-slate-11">
+              {{ t('REPLY_TEMPLATES.AI.TOGGLE_HINT') }}
+            </span>
+          </span>
+        </label>
 
         <div class="flex flex-col gap-1">
           <span class="text-xs font-medium text-n-slate-11">

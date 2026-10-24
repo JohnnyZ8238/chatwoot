@@ -54,10 +54,10 @@ const RECORDS = [
 
 const reorder = vi.fn();
 
-const mountLibrary = (options = {}) =>
+const mountLibrary = ({ global: extraGlobal = {}, ...options } = {}) =>
   mount(TemplateLibraryDialog, {
-    ...options,
     props: { variables: { 'contact.first_name': 'Emily' } },
+    ...options,
     global: {
       plugins: [
         createStore({
@@ -89,7 +89,7 @@ const mountLibrary = (options = {}) =>
           },
         }),
       ],
-      stubs: { Dialog: DialogStub, RouterLink: true },
+      stubs: { Dialog: DialogStub, RouterLink: true, ...extraGlobal.stubs },
       mocks: { $router: { push: vi.fn() } },
     },
   });
@@ -98,7 +98,9 @@ const rowIds = wrapper =>
   wrapper.findAll('[data-row]').map(row => +row.attributes('data-row'));
 
 describe('TemplateLibraryDialog', () => {
-  beforeEach(() => reorder.mockClear());
+  beforeEach(() => {
+    reorder.mockClear();
+  });
 
   it('focuses the search box when it opens', async () => {
     const wrapper = mountLibrary({ attachTo: document.body });
@@ -177,5 +179,48 @@ describe('TemplateLibraryDialog', () => {
     await wrapper.find('input[type="date"]').setValue('2026-10-26');
     await wrapper.find('[data-testid="library-insert"]').trigger('click');
     expect(wrapper.emitted('insert')[0][0]).toBe('Ships Mon, Oct 26');
+  });
+});
+
+describe('TemplateLibraryDialog with an AI prompt template', () => {
+  it('inserts the AI draft, not the instructions', async () => {
+    RECORDS.push({
+      id: 4,
+      short_code: 'warm',
+      title: 'Answer warmly',
+      content: 'Answer {{contact.first_name}} warmly',
+      variables: [],
+      scope: 'company',
+      canned_response_category_id: null,
+      favorite: true,
+      favorite_position: 2,
+      usage_count: 0,
+      last_used_at: null,
+      ai_prompt: true,
+    });
+    const PanelStub = {
+      props: ['templateId', 'instructions', 'conversationId', 'autoGenerate'],
+      emits: ['update:draft'],
+      template:
+        '<div data-testid="ai-panel" :data-instructions="instructions"><button class="fake-draft" @click="$emit(\'update:draft\', \'Hi Emily, glad to help!\')" /></div>',
+    };
+    const wrapper = mountLibrary({
+      props: {
+        variables: { 'contact.first_name': 'Emily', 'conversation.id': 42 },
+      },
+      global: { stubs: { AiDraftPanel: PanelStub } },
+    });
+
+    await wrapper.find('[data-row="4"]').trigger('click');
+    expect(
+      wrapper.find('[data-testid="ai-panel"]').attributes('data-instructions')
+    ).toBe('Answer Emily warmly');
+    await wrapper.find('[data-testid="library-insert"]').trigger('click');
+    expect(wrapper.emitted('insert')).toBeUndefined();
+
+    await wrapper.find('.fake-draft').trigger('click');
+    await wrapper.find('[data-testid="library-insert"]').trigger('click');
+    expect(wrapper.emitted('insert')[0][0]).toBe('Hi Emily, glad to help!');
+    RECORDS.pop();
   });
 });

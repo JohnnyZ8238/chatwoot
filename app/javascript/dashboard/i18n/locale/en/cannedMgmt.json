@@ -100,6 +100,21 @@
       "SEARCH": "No templates match “{searchTerm}”.",
       "NONE": "No templates here yet."
     },
+    "AI": {
+      "BADGE": "AI",
+      "DRAFT": "AI draft",
+      "INSTRUCTIONS": "Instructions for the AI",
+      "GENERATE": "Generate draft",
+      "REGENERATE": "Regenerate",
+      "GENERATING": "Writing a draft from the conversation…",
+      "PLACEHOLDER": "Click Generate draft. The AI reads this conversation and follows the template's instructions.",
+      "REVIEW_HINT": "Edit the draft as needed. It goes into the reply box; nothing is sent until you press Send.",
+      "INSERT_DRAFT": "Insert draft",
+      "ERROR": "Could not generate a draft. Please try again.",
+      "NO_CONVERSATION": "Open a conversation to generate a draft.",
+      "TOGGLE": "AI prompt",
+      "TOGGLE_HINT": "The message is instructions for the AI, which drafts a reply from the conversation. The agent reviews the draft before sending."
+    },
     "FILL": {
       "INSERT": "Insert",
       "PREVIEW": "Preview",
