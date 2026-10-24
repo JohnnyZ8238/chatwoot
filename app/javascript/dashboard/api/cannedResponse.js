@@ -1,24 +1,27 @@
-import CacheEnabledApiClient from './CacheEnabledApiClient';
+/* global axios */
+import ApiClient from './ApiClient';
 
-class CannedResponse extends CacheEnabledApiClient {
+// Not cached in IndexedDB: the list carries the signed-in agent's personal templates and favorites,
+// which an account-wide cache key can't keep apart.
+class CannedResponse extends ApiClient {
   constructor() {
     super('canned_responses', { accountScoped: true });
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  get cacheModelName() {
-    return 'canned_response';
+  use(id) {
+    return axios.post(`${this.url}/${id}/use`);
   }
 
-  // The index endpoint returns a bare array instead of a payload wrapper
-  // eslint-disable-next-line class-methods-use-this
-  extractDataFromResponse(response) {
-    return response.data;
+  favorite(id) {
+    return axios.post(`${this.url}/${id}/favorite`);
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  marshallData(dataToParse) {
-    return { data: dataToParse };
+  unfavorite(id) {
+    return axios.delete(`${this.url}/${id}/favorite`);
+  }
+
+  reorderFavorites(ids) {
+    return axios.patch(`${this.url}/favorites`, { ids });
   }
 }
 

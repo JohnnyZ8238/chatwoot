@@ -3,8 +3,14 @@ import * as MutationHelpers from 'shared/helpers/vuex/mutationHelpers';
 import * as types from '../mutation-types';
 import CannedResponseAPI from '../../api/cannedResponse';
 
+const RECENT_LIMIT = 15;
+
+const byFavoritePosition = (a, b) =>
+  (a.favorite_position ?? 0) - (b.favorite_position ?? 0);
+
 const state = {
   records: [],
+  cacheKey: null,
   uiFlags: {
     fetchingList: false,
     fetchingItem: false,
@@ -30,22 +36,85 @@ const getters = {
   getUIFlags(_state) {
     return _state.uiFlags;
   },
+  getFavoriteCannedResponses(_state) {
+    return _state.records
+      .filter(record => record.favorite)
+      .sort(byFavoritePosition);
+  },
+  getRecentCannedResponses(_state) {
+    return _state.records
+      .filter(record => record.last_used_at)
+      .sort((a, b) => b.last_used_at.localeCompare(a.last_used_at))
+      .slice(0, RECENT_LIMIT);
+  },
+  getCompanyCannedResponses(_state) {
+    return _state.records.filter(record => record.scope !== 'personal');
+  },
+  getPersonalCannedResponses(_state) {
+    return _state.records.filter(record => record.scope === 'personal');
+  },
 };
 
 const actions = {
+  // The list isn't cached in IndexedDB, so a changed account key just means fetching it again
   revalidateCannedResponses: async function revalidateCannedResponses(
-    { commit },
+    { commit, dispatch, state: currentState },
     { newKey }
   ) {
+    if (!newKey || newKey === currentState.cacheKey) return;
+    commit(types.default.SET_CANNED_CACHE_KEY, newKey);
+    await dispatch('getCannedResponse');
+  },
+
+  markCannedResponseUsed: async function markCannedResponseUsed(
+    { commit },
+    id
+  ) {
     try {
-      const isExistingKeyValid =
-        await CannedResponseAPI.validateCacheKey(newKey);
-      if (!isExistingKeyValid) {
-        const response = await CannedResponseAPI.refetchAndCommit(newKey);
-        commit(types.default.SET_CANNED, response.data);
-      }
+      const response = await CannedResponseAPI.use(id);
+      commit(types.default.EDIT_CANNED, response.data);
     } catch (error) {
-      // Ignore error
+      // Usage stats are best effort
+    }
+  },
+
+  toggleCannedResponseFavorite: async function toggleCannedResponseFavorite(
+    { commit, state: currentState },
+    id
+  ) {
+    const record = currentState.records.find(item => item.id === id);
+    if (!record) return;
+
+    const positions = currentState.records
+      .filter(item => item.favorite)
+      .map(item => item.favorite_position ?? 0);
+    const favorite = !record.favorite;
+    commit(types.default.EDIT_CANNED, {
+      ...record,
+      favorite,
+      favorite_position: favorite ? Math.max(-1, ...positions) + 1 : null,
+    });
+
+    try {
+      const response = favorite
+        ? await CannedResponseAPI.favorite(id)
+        : await CannedResponseAPI.unfavorite(id);
+      commit(types.default.EDIT_CANNED, response.data);
+    } catch (error) {
+      commit(types.default.EDIT_CANNED, record);
+      throwErrorMessage(error);
+    }
+  },
+
+  reorderCannedResponseFavorites: async function reorderCannedResponseFavorites(
+    { commit },
+    ids
+  ) {
+    commit(types.default.SET_CANNED_FAVORITE_ORDER, ids);
+    try {
+      await CannedResponseAPI.reorderFavorites(ids);
+    } catch (error) {
+      throwErrorMessage(error);
     }
   },
 
@@ -118,6 +187,15 @@ const mutations = {
   [types.default.ADD_CANNED]: MutationHelpers.create,
   [types.default.EDIT_CANNED]: MutationHelpers.update,
   [types.default.DELETE_CANNED]: MutationHelpers.destroy,
+  [types.default.SET_CANNED_CACHE_KEY](_state, key) {
+    _state.cacheKey = key;
+  },
+  [types.default.SET_CANNED_FAVORITE_ORDER](_state, ids) {
+    _state.records.forEach(record => {
+      const position = ids.indexOf(record.id);
+      if (position !== -1) record.favorite_position = position;
+    });
+  },
 };
 
 export default {
