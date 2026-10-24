@@ -72,6 +72,17 @@ RSpec.describe ReplyTemplates::DraftGeneratorService do
     end
   end
 
+  it 'uses the key and model saved in the account settings over the server ones' do
+    ReplyTemplates::AiSettings.new(account).update!(api_key: 'account-key', model: 'deepseek-reasoner')
+    stub_deepseek(deepseek_reply)
+
+    with_modified_env(DEEPSEEK_API_KEY: 'server-key') { service.perform }
+
+    expect(WebMock).to(have_requested(:post, completions_url).with do |request|
+      request.headers['Authorization'] == 'Bearer account-key' && JSON.parse(request.body)['model'] == 'deepseek-reasoner'
+    end)
+  end
+
   it 'raises a not-configured error without an API key' do
     with_modified_env(DEEPSEEK_API_KEY: nil) do
       expect { service.perform }.to raise_error(ReplyTemplates::DraftGeneratorService::NotConfiguredError)

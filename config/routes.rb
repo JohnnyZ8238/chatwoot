@@ -167,6 +167,7 @@ Rails.application.routes.draw do
               delete :favorite, action: :unfavorite
             end
           end
+          resource :reply_template_ai_settings, only: [:show, :update]
           resources :canned_response_categories, only: [:index, :create, :update, :destroy] do
             collection do
               patch :reorder

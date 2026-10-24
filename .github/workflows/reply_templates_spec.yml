@@ -41,13 +41,13 @@ jobs:
           rm -rf enterprise
           rm -rf spec/enterprise
       - name: Rubocop
-        run: bundle exec rubocop app/models/canned_response*.rb app/policies/canned_response*.rb app/controllers/api/v1/accounts/canned_response*.rb app/services/reply_templates db/migrate/20261024* spec/models/canned_response*_spec.rb spec/controllers/api/v1/accounts/canned_response*_spec.rb spec/factories/canned_response*.rb spec/services/reply_templates
+        run: bundle exec rubocop app/models/canned_response*.rb app/policies/canned_response*.rb app/controllers/api/v1/accounts/canned_response*.rb app/controllers/api/v1/accounts/reply_template_ai_settings_controller.rb app/services/reply_templates db/migrate/20261024* spec/models/canned_response*_spec.rb spec/controllers/api/v1/accounts/canned_response*_spec.rb spec/controllers/api/v1/accounts/reply_template_ai_settings_controller_spec.rb spec/factories/canned_response*.rb spec/services/reply_templates
       - name: Prepare database
         run: |
           bundle exec rake db:create
           bundle exec rake db:schema:load
       - name: Run specs
-        run: bundle exec rspec --format documentation spec/models/canned_response_spec.rb spec/models/canned_response_category_spec.rb spec/controllers/api/v1/accounts/canned_responses_controller_spec.rb spec/controllers/api/v1/accounts/canned_response_categories_controller_spec.rb spec/services/reply_templates spec/models/account_spec.rb spec/models/user_spec.rb
+        run: bundle exec rspec --format documentation spec/models/canned_response_spec.rb spec/models/canned_response_category_spec.rb spec/controllers/api/v1/accounts/canned_responses_controller_spec.rb spec/controllers/api/v1/accounts/canned_response_categories_controller_spec.rb spec/controllers/api/v1/accounts/reply_template_ai_settings_controller_spec.rb spec/services/reply_templates spec/models/account_spec.rb spec/models/user_spec.rb
       # Migrating from an empty database stops on an old upstream migration, so start from the
       # v4.19.0 schema and apply only this branch's migrations. Upstream's schema.rb already differs
       # from a fresh dump in formatting, so compare just the reply template tables.

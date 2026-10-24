@@ -4,7 +4,6 @@ class ReplyTemplates::DraftGeneratorService
   class NotConfiguredError < StandardError; end
   class GenerationError < StandardError; end
 
-  DEFAULT_MODEL = 'deepseek-chat'.freeze
   DEFAULT_BASE_URL = 'https://api.deepseek.com/'.freeze
   TRANSCRIPT_LIMIT = 40
   REQUEST_TIMEOUT = 60
@@ -22,7 +21,7 @@ class ReplyTemplates::DraftGeneratorService
   end
 
   def perform
-    raise NotConfiguredError, 'AI drafts need DEEPSEEK_API_KEY set on the Chatwoot server' if api_key.blank?
+    raise NotConfiguredError, 'AI drafts need a DeepSeek API key: an administrator can add it in Settings → Canned Responses' if api_key.blank?
 
     response = client.chat(
       parameters: {
@@ -98,15 +97,19 @@ class ReplyTemplates::DraftGeneratorService
     OpenAI::Client.new(access_token: api_key, uri_base: base_url, request_timeout: REQUEST_TIMEOUT)
   end
 
+  def ai_settings
+    @ai_settings ||= ReplyTemplates::AiSettings.new(conversation.account)
+  end
+
   def api_key
-    ENV.fetch('DEEPSEEK_API_KEY', nil)
+    ai_settings.api_key
+  end
+
+  def model
+    ai_settings.model
   end
 
   def base_url
     ENV.fetch('DEEPSEEK_BASE_URL', DEFAULT_BASE_URL)
-  end
-
-  def model
-    ENV.fetch('REPLY_TEMPLATES_AI_MODEL', DEFAULT_MODEL)
   end
 end
