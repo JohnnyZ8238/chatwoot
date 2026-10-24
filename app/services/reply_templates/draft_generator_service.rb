@@ -98,7 +98,8 @@ class ReplyTemplates::DraftGeneratorService
   end
 
   def ai_settings
-    @ai_settings ||= ReplyTemplates::AiSettings.new(conversation.account)
+    # read fresh: an administrator may have just saved a new key
+    @ai_settings ||= ReplyTemplates::AiSettings.new(Account.find(conversation.account_id))
   end
 
   def api_key

@@ -53,7 +53,7 @@ describe('AiDraftPanel', () => {
 
   it('shows the server error when generation fails', async () => {
     const apiError = Object.assign(new Error('Request failed'), {
-      response: { data: { error: 'AI drafts need DEEPSEEK_API_KEY' } },
+      response: { data: { error: 'AI drafts need a DeepSeek API key' } },
     });
     CannedResponseAPI.generate.mockRejectedValue(apiError);
     const wrapper = mountPanel();
@@ -62,7 +62,7 @@ describe('AiDraftPanel', () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="ai-error"]').text()).toContain(
-      'DEEPSEEK_API_KEY'
+      'DeepSeek API key'
     );
   });
 

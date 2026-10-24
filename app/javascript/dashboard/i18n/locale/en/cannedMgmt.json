@@ -115,6 +115,20 @@
       "TOGGLE": "AI prompt",
       "TOGGLE_HINT": "The message is instructions for the AI, which drafts a reply from the conversation. The agent reviews the draft before sending."
     },
+    "AI_SETTINGS": {
+      "TITLE": "AI drafts (DeepSeek)",
+      "DESCRIPTION": "Templates marked “AI prompt” ask DeepSeek to draft a reply from the conversation. Paste your DeepSeek API key here (platform.deepseek.com → API keys). It is stored for this account and never shown again.",
+      "AGENT_NOTE": "AI drafts use the DeepSeek key an administrator set for this account.",
+      "SET": "Key set",
+      "NOT_SET": "No API key yet",
+      "API_KEY": "DeepSeek API key",
+      "API_KEY_PLACEHOLDER": "sk-…",
+      "API_KEY_KEEP": "Leave empty to keep the saved key",
+      "MODEL": "Model",
+      "SAVE": "Save",
+      "REMOVE": "Remove key",
+      "SAVED": "AI settings saved."
+    },
     "FILL": {
       "INSERT": "Insert",
       "PREVIEW": "Preview",

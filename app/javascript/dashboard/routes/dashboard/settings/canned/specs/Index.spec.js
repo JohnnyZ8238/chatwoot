@@ -77,6 +77,7 @@ const mountPage = role =>
         SettingsLayout: LayoutStub,
         BaseSettingsHeader: HeaderStub,
         TemplateEditorDialog: true,
+        AiSettingsCard: true,
         Dialog: true,
       },
     },

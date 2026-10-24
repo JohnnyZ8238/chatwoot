@@ -12,6 +12,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import TemplateEditorDialog from './TemplateEditorDialog.vue';
+import AiSettingsCard from './AiSettingsCard.vue';
 
 defineOptions({
   name: 'CannedResponseSettings',
@@ -227,6 +228,7 @@ onMounted(() => {
     </template>
 
     <template #body>
+      <AiSettingsCard :is-admin="isAdmin" />
       <div class="flex gap-1 mb-4 border-b border-n-weak">
         <button
           v-for="option in ['company', 'personal']"
