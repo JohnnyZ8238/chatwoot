@@ -12,6 +12,8 @@ import RequestContactInfoButton from '../RequestContactInfoButton.vue';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { mapGetters } from 'vuex';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import { emitter } from 'shared/helpers/mitt';
+import { BUS_EVENTS } from 'shared/constants/busEvents';
 
 export default {
   name: 'ReplyBottomPanel',
@@ -258,6 +260,9 @@ export default {
     ActiveStorage.start();
   },
   methods: {
+    openReplyTemplates() {
+      emitter.emit(BUS_EVENTS.OPEN_REPLY_TEMPLATES);
+    },
     toggleMessageSignature() {
       this.setSignatureFlagForInbox(this.channelType, !this.sendWithSignature);
     },
@@ -279,6 +284,15 @@ export default {
         faded
         sm
         @click="toggleEmojiPicker"
+      />
+      <NextButton
+        v-if="!isEditorDisabled && !isNote"
+        v-tooltip.top-end="$t('REPLY_TEMPLATES.LIBRARY.OPEN_HINT')"
+        icon="i-lucide-library-big"
+        slate
+        faded
+        sm
+        @click="openReplyTemplates"
       />
       <FileUpload
         v-if="showAttachButton"

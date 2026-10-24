@@ -18,6 +18,7 @@ import VariableList from '../conversation/VariableList.vue';
 import MacroList from '../conversation/MacroList.vue';
 import TagTools from '../conversation/TagTools.vue';
 import TemplateFillDialog from '../conversation/replyTemplates/TemplateFillDialog.vue';
+import TemplateLibraryDialog from '../conversation/replyTemplates/TemplateLibraryDialog.vue';
 import { useStore } from 'dashboard/composables/store';
 import { useReplyTemplateVariables } from 'dashboard/composables/useReplyTemplateVariables';
 import CopilotMenuBar from './CopilotMenuBar.vue';
@@ -298,6 +299,14 @@ const templateVariables = useReplyTemplateVariables(
 );
 const fillTemplate = ref(null);
 const fillRange = ref(null);
+const showTemplateLibrary = ref(false);
+
+// Only the reply box's editor answers the library shortcut and button
+const openTemplateLibrary = () => {
+  if (!props.enableInsertEvents || !props.enableCannedResponses) return;
+  if (props.isPrivate || props.disabled) return;
+  showTemplateLibrary.value = true;
+};
 
 // Deleting the trigger drops the suggestion, so the plugin closes the picker through
 // `onExit` on its own.
@@ -736,6 +745,13 @@ useKeyboardEvents({
     action: pasteInlineImageFromClipboard,
     allowOnFocusedInput: true,
   },
+  'Alt+KeyT': {
+    action: event => {
+      event.preventDefault();
+      openTemplateLibrary();
+    },
+    allowOnFocusedInput: true,
+  },
 });
 
 function handleLineBreakWhenEnterToSendEnabled(event) {
@@ -987,6 +1003,21 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, content => {
   if (!props.enableInsertEvents) return;
   insertContentIntoEditor(content);
 });
+
+useEmitter(BUS_EVENTS.OPEN_REPLY_TEMPLATES, openTemplateLibrary);
+
+const onLibraryInsert = (content, template) => {
+  showTemplateLibrary.value = false;
+  insertContentIntoEditor(content);
+  if (template?.id) store.dispatch('markCannedResponseUsed', template.id);
+  editorView?.focus();
+};
+
+const onLibraryClose = () => {
+  if (!showTemplateLibrary.value) return;
+  showTemplateLibrary.value = false;
+  editorView?.focus();
+};
 </script>
 
 <template>
@@ -1022,6 +1053,12 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, content => {
       :variables="templateVariables"
       @insert="onFillInsert"
       @close="onFillClose"
+    />
+    <TemplateLibraryDialog
+      v-if="showTemplateLibrary"
+      :variables="variables"
+      @insert="onLibraryInsert"
+      @close="onLibraryClose"
     />
     <VariableList
       v-if="shouldShowVariables"
