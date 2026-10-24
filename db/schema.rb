@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_19_143116) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_24_000003) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -407,12 +407,44 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_19_143116) do
     t.index ["scheduled_at"], name: "index_campaigns_on_scheduled_at"
   end
 
+  create_table "canned_response_categories", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id"
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id", "name"], name: "index_canned_response_categories_unique_name", unique: true
+  end
+
+  create_table "canned_response_preferences", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "canned_response_id", null: false
+    t.boolean "favorite", default: false, null: false
+    t.integer "favorite_position"
+    t.integer "use_count", default: 0, null: false
+    t.datetime "last_used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id"], name: "index_canned_response_preferences_on_account_id_and_user_id"
+    t.index ["canned_response_id"], name: "index_canned_response_preferences_on_canned_response_id"
+    t.index ["user_id", "canned_response_id"], name: "index_canned_response_preferences_unique", unique: true
+  end
+
   create_table "canned_responses", id: :serial, force: :cascade do |t|
     t.integer "account_id", null: false
     t.string "short_code"
     t.text "content"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "title"
+    t.bigint "user_id"
+    t.bigint "canned_response_category_id"
+    t.jsonb "variables", default: [], null: false
+    t.integer "usage_count", default: 0, null: false
+    t.index ["account_id", "user_id"], name: "index_canned_responses_on_account_id_and_user_id"
+    t.index ["canned_response_category_id"], name: "index_canned_responses_on_canned_response_category_id"
   end
 
   create_table "captain_assistant_responses", force: :cascade do |t|

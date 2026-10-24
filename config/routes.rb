@@ -156,7 +156,21 @@ Rails.application.routes.draw do
               post :reauthorize_page
             end
           end
-          resources :canned_responses, only: [:index, :create, :update, :destroy]
+          resources :canned_responses, only: [:index, :create, :update, :destroy] do
+            collection do
+              patch :favorites, action: :reorder_favorites
+            end
+            member do
+              post :use
+              post :favorite
+              delete :favorite, action: :unfavorite
+            end
+          end
+          resources :canned_response_categories, only: [:index, :create, :update, :destroy] do
+            collection do
+              patch :reorder
+            end
+          end
           resources :automation_rules, only: [:index, :create, :show, :update, :destroy] do
             post :clone
           end
