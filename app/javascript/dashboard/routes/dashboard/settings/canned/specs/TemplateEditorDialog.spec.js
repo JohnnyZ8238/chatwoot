@@ -115,6 +115,19 @@ describe('TemplateEditorDialog', () => {
     });
   });
 
+  it('saves an AI prompt template', async () => {
+    const wrapper = mountEditor();
+    await wrapper.find('[data-testid="template-title"]').setValue('Warm answer');
+    await wrapper.find('[data-testid="template-shortcut"]').setValue('warm');
+    await setMessage(wrapper, 'Answer the customer warmly');
+    await wrapper.find('[data-testid="template-ai-prompt"]').setValue(true);
+
+    await wrapper.find('.save').trigger('click');
+    await flushPromises();
+
+    expect(create.mock.calls[0][1]).toMatchObject({ ai_prompt: true });
+  });
+
   it('does not save without a shortcut', async () => {
     const wrapper = mountEditor();
     await wrapper.find('[data-testid="template-title"]').setValue('Ship');

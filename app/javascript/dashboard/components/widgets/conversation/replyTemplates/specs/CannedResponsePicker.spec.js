@@ -170,3 +170,28 @@ describe('CannedResponse picker', () => {
     expect(wrapper.emitted('replace')).toBeUndefined();
   });
 });
+
+describe('CannedResponse picker with AI prompt templates', () => {
+  it('sends an AI prompt template to the fill dialog even without fields', async () => {
+    RECORDS.push({
+      id: 4,
+      short_code: 'warm',
+      title: 'Answer warmly',
+      content: 'Answer the customer warmly',
+      variables: [],
+      scope: 'company',
+      canned_response_category_id: null,
+      favorite: false,
+      favorite_position: null,
+      last_used_at: null,
+      ai_prompt: true,
+    });
+    const wrapper = mountPicker({ searchKey: 'warm' });
+
+    await wrapper.find('[data-id="4"]').trigger('click');
+
+    expect(wrapper.emitted('fill')[0][0].id).toBe(4);
+    expect(wrapper.emitted('replace')).toBeUndefined();
+    RECORDS.pop();
+  });
+});

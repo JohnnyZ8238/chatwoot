@@ -99,3 +99,51 @@ describe('TemplateFillDialog', () => {
     );
   });
 });
+
+describe('TemplateFillDialog with an AI prompt template', () => {
+  const AI_TEMPLATE = {
+    id: 9,
+    title: 'Answer warmly',
+    short_code: 'warm',
+    ai_prompt: true,
+    content: 'Answer {{contact.first_name}} warmly. Mention {{perk}}.',
+    variables: [{ key: 'perk', label: 'Perk', type: 'text' }],
+  };
+
+  const PanelStub = {
+    props: ['templateId', 'instructions', 'conversationId', 'autoGenerate'],
+    emits: ['update:draft'],
+    template:
+      '<div data-testid="ai-panel" :data-instructions="instructions" :data-conversation="conversationId"><button class="fake-draft" @click="$emit(\'update:draft\', \'Hi Emily! Free shipping.\')" /></div>',
+  };
+
+  const mountAi = () =>
+    mount(TemplateFillDialog, {
+      props: {
+        template: AI_TEMPLATE,
+        variables: { 'contact.first_name': 'Emily', 'conversation.id': 42 },
+      },
+      global: { stubs: { Dialog: DialogStub, AiDraftPanel: PanelStub } },
+    });
+
+  it('passes the resolved instructions and conversation to the AI panel', async () => {
+    const wrapper = mountAi();
+    await wrapper.find('input').setValue('free shipping');
+
+    const panel = wrapper.find('[data-testid="ai-panel"]');
+    expect(panel.attributes('data-instructions')).toBe(
+      'Answer Emily warmly. Mention free shipping.'
+    );
+    expect(panel.attributes('data-conversation')).toBe('42');
+  });
+
+  it('inserts the draft, not the instructions, once there is one', async () => {
+    const wrapper = mountAi();
+    expect(wrapper.find('.confirm').attributes('disabled')).toBeDefined();
+
+    await wrapper.find('.fake-draft').trigger('click');
+    await wrapper.find('.confirm').trigger('click');
+
+    expect(wrapper.emitted('insert')[0][0]).toBe('Hi Emily! Free shipping.');
+  });
+});

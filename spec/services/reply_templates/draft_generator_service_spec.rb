@@ -49,7 +49,7 @@ RSpec.describe ReplyTemplates::DraftGeneratorService do
           prompt.include?('Tell them it ships Monday. Be warm.') &&
           prompt.include?('When will my Agave ship?') &&
           prompt.include?('Emily Zhang') &&
-          !prompt.include?('check the grower')
+          prompt.exclude?('check the grower')
       end)
     end
 
@@ -61,8 +61,8 @@ RSpec.describe ReplyTemplates::DraftGeneratorService do
     end
 
     it 'raises a generation error when the API fails' do
-      stub_request(:post, messages_url).to_return(status: 400, body: { type: 'error', error: { type: 'invalid_request_error', message: 'bad' } }.to_json,
-                                                  headers: { 'Content-Type' => 'application/json' })
+      error = { type: 'error', error: { type: 'invalid_request_error', message: 'bad' } }
+      stub_request(:post, messages_url).to_return(status: 400, body: error.to_json, headers: { 'Content-Type' => 'application/json' })
 
       expect { service.perform }.to raise_error(ReplyTemplates::DraftGeneratorService::GenerationError)
     end
