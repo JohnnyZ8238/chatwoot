@@ -3,6 +3,7 @@
 # Table name: canned_responses
 #
 #  id                          :integer          not null, primary key
+#  ai_prompt                   :boolean          default(FALSE), not null
 #  content                     :text
 #  short_code                  :string
 #  title                       :string

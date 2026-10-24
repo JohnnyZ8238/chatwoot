@@ -126,6 +126,14 @@ RSpec.describe 'Canned Responses API', type: :request do
         expect(template.variables.first).to include('key' => 'ship_date', 'type' => 'date', 'required' => true)
       end
 
+      it 'saves an AI prompt template' do
+        post base_url, params: { short_code: 'draft', content: 'Answer their question warmly', ai_prompt: true },
+                       headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['ai_prompt']).to be(true)
+      end
+
       it 'rejects variables with an unknown type' do
         params = { short_code: 'bad', content: '{{x}}', variables: [{ key: 'x', type: 'colour' }] }
 
@@ -246,6 +254,69 @@ RSpec.describe 'Canned Responses API', type: :request do
       post "#{base_url}/#{theirs.id}/use", headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/canned_responses/:id/generate' do
+    let(:template) { create(:canned_response, account: account, ai_prompt: true, content: 'Explain the shipping date kindly') }
+    let(:inbox) { create(:inbox, account: account) }
+    let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+    let(:generator) { instance_double(ReplyTemplates::DraftGeneratorService, perform: 'Your plant ships Monday.') }
+
+    before { create(:inbox_member, user: agent, inbox: inbox) }
+
+    it 'returns a draft generated from the given instructions' do
+      allow(ReplyTemplates::DraftGeneratorService).to receive(:new).and_return(generator)
+
+      post "#{base_url}/#{template.id}/generate",
+           params: { conversation_id: conversation.display_id, instructions: 'Ship date is Monday' },
+           headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to eq('draft' => 'Your plant ships Monday.')
+      expect(ReplyTemplates::DraftGeneratorService).to have_received(:new)
+        .with(conversation: conversation, user: agent, instructions: 'Ship date is Monday')
+    end
+
+    it 'falls back to the template content when no instructions are sent' do
+      allow(ReplyTemplates::DraftGeneratorService).to receive(:new).and_return(generator)
+
+      post "#{base_url}/#{template.id}/generate", params: { conversation_id: conversation.display_id },
+                                                  headers: agent.create_new_auth_token, as: :json
+
+      expect(ReplyTemplates::DraftGeneratorService).to have_received(:new)
+        .with(conversation: conversation, user: agent, instructions: 'Explain the shipping date kindly')
+    end
+
+    it 'does not let an agent draft for a conversation outside their inboxes' do
+      other_conversation = create(:conversation, account: account, inbox: create(:inbox, account: account))
+
+      post "#{base_url}/#{template.id}/generate", params: { conversation_id: other_conversation.display_id },
+                                                  headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'explains when AI is not configured' do
+      allow(ReplyTemplates::DraftGeneratorService).to receive(:new)
+        .and_raise(ReplyTemplates::DraftGeneratorService::NotConfiguredError, 'ANTHROPIC_API_KEY is not set')
+
+      post "#{base_url}/#{template.id}/generate", params: { conversation_id: conversation.display_id },
+                                                  headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to include('ANTHROPIC_API_KEY')
+    end
+
+    it 'reports a failed generation as a bad gateway' do
+      allow(generator).to receive(:perform).and_raise(ReplyTemplates::DraftGeneratorService::GenerationError, 'Claude declined')
+      allow(ReplyTemplates::DraftGeneratorService).to receive(:new).and_return(generator)
+
+      post "#{base_url}/#{template.id}/generate", params: { conversation_id: conversation.display_id },
+                                                  headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:bad_gateway)
+      expect(response.parsed_body['error']).to eq('Claude declined')
     end
   end
 

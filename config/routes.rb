@@ -163,6 +163,7 @@ Rails.application.routes.draw do
             member do
               post :use
               post :favorite
+              post :generate
               delete :favorite, action: :unfavorite
             end
           end

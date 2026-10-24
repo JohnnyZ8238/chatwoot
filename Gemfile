@@ -204,6 +204,9 @@ gem 'ai-agents', '~> 0.13.0'
 
 gem 'ruby_llm', '~> 2.0.0'
 
+# Claude drafts replies from reply-template prompts
+gem 'anthropic'
+
 gem 'cld3', '~> 3.7'
 
 # OpenTelemetry for LLM observability

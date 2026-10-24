@@ -51,6 +51,20 @@ class Api::V1::Accounts::CannedResponsesController < Api::V1::Accounts::BaseCont
     render json: @canned_response.as_template_json(record)
   end
 
+  # A draft for the agent to review; nothing is sent to the customer here
+  def generate
+    conversation = Current.account.conversations.find_by!(display_id: params[:conversation_id])
+    authorize(conversation, :show?)
+    draft = ReplyTemplates::DraftGeneratorService.new(
+      conversation: conversation, user: Current.user, instructions: params[:instructions].presence || @canned_response.content
+    ).perform
+    render json: { draft: draft }
+  rescue ReplyTemplates::DraftGeneratorService::NotConfiguredError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  rescue ReplyTemplates::DraftGeneratorService::GenerationError => e
+    render json: { error: e.message }, status: :bad_gateway
+  end
+
   def reorder_favorites
     ids = Array(params[:ids]).map(&:to_i)
     ActiveRecord::Base.transaction do
@@ -76,7 +90,7 @@ class Api::V1::Accounts::CannedResponsesController < Api::V1::Accounts::BaseCont
   def canned_response_params
     # a scope-only update (moving between libraries) wraps to an empty hash, which `require` rejects
     params.fetch(:canned_response, ActionController::Parameters.new).permit(
-      :short_code, :content, :title, :canned_response_category_id,
+      :short_code, :content, :title, :canned_response_category_id, :ai_prompt,
       variables: [:key, :label, :type, :required, :default, { options: [] }]
     )
   end

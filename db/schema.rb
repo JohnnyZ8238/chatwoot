@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_24_000003) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_24_000004) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -443,6 +443,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_24_000003) do
     t.bigint "canned_response_category_id"
     t.jsonb "variables", default: [], null: false
     t.integer "usage_count", default: 0, null: false
+    t.boolean "ai_prompt", default: false, null: false
     t.index ["account_id", "user_id"], name: "index_canned_responses_on_account_id_and_user_id"
     t.index ["canned_response_category_id"], name: "index_canned_responses_on_canned_response_category_id"
   end
